@@ -1,6 +1,6 @@
 -- name: CreateTransfer :one
-INSERT INTO transfers (id,from_account_id,to_account_id,amount,created_at)
-VALUES ($1,$2,$3,$4,$5)
+INSERT INTO transfers (from_account_id,to_account_id,amount)
+VALUES ($1,$2,$3)
 RETURNING *;
 
 -- name: GetTransfer :one
