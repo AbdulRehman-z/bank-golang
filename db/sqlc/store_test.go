@@ -20,7 +20,7 @@ func TestTransferTx(t *testing.T) {
 	resultChannel := make(chan TransferTxResult)
 
 	// Run n concurrent transfer transactions
-	n := 2
+	n := 5
 	amount := int64(10)
 
 	for i := 0; i < n; i++ {
