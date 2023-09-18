@@ -89,7 +89,7 @@ func TestDeleteAccount(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, account)
 
-	account, err = testQueries.GetAccount(context.Background(), 1)
+	account, err = testQueries.GetAccount(context.Background(), account1.ID)
 	require.Error(t, err)
 	require.Empty(t, account)
 }
