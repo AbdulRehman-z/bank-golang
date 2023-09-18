@@ -24,5 +24,11 @@ sqlc:
 server:
 	go run main.go
 
+rmtestcache:
+	go clean -testcache
+
+truncate:
+	docker exec -it postgresDb psql --username=postgres --dbname=bankDb --command "TRUNCATE TABLE entries, transfers, accounts CASCADE;"
+
 test:
 	go test -v -cover ./...
