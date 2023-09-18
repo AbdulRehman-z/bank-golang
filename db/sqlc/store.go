@@ -94,49 +94,43 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 
 		//TODO: Update accounts
 		if arg.FromAccountID < arg.ToAccountID {
-
-			// fmt.Println(txName, "update account 1: ")
-			result.FromAccount, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
-				ID:     arg.FromAccountID,
-				Amount: -arg.Amount,
-			})
-			if err != nil {
-				return fmt.Errorf("context: UpdateAccount, err: %v", err)
-			}
-
-			// fmt.Println(txName, "update account 2: ")
-			result.ToAccount, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
-				ID:     arg.ToAccountID,
-				Amount: arg.Amount,
-			})
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, +arg.Amount)
 			if err != nil {
 				return fmt.Errorf("context: UpdateAccount, err: %v", err)
 			}
 		} else {
-			// fmt.Println(txName, "update account 2: ")
-			result.ToAccount, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
-				ID:     arg.ToAccountID,
-				Amount: arg.Amount,
-			})
+			result.ToAccount, result.FromAccount, err = addMoney(ctx, q, arg.ToAccountID, +arg.Amount, arg.FromAccountID, -arg.Amount)
 			if err != nil {
 				return fmt.Errorf("context: UpdateAccount, err: %v", err)
 			}
-
-			// fmt.Println(txName, "update account 1: ")
-			result.FromAccount, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
-				ID:     arg.FromAccountID,
-				Amount: -arg.Amount,
-			})
-			if err != nil {
-				return fmt.Errorf("context: UpdateAccount, err: %v", err)
-			}
-
 		}
 
 		return nil
-
 	})
 
 	return result, err
 
+}
+
+func addMoney(ctx context.Context,
+	q *Queries,
+	account1ID int64,
+	amount1 int64,
+	account2ID int64,
+	amount2 int64) (account1 Account, account2 Account, err error) {
+
+	account1, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
+		ID:     account1ID,
+		Amount: amount1,
+	})
+	if err != nil {
+		return
+	}
+
+	account2, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
+		ID:     account2ID,
+		Amount: amount2,
+	})
+
+	return
 }
