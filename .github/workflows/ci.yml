@@ -30,7 +30,7 @@ jobs:
 
       - name: Install migrate
         run: |
-          $ curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-386.deb | tar xvz
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-386.deb | tar xvz
           which migrate
 
       - name: Run migrations
