@@ -12,10 +12,10 @@ createdb:
 dropdb:
 	dockepostgresepasswordpostgres dropdb bankDb
 
-migrateup:
+migrate-up:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
-migratedown:
+migrate-down:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down
 
 sqlc:
