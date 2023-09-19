@@ -31,8 +31,8 @@ jobs:
       - name: Install migrate
         run: |
           curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-386.deb -o migrate.deb
-          dpkg -i migrate.deb
-          rm migrate.deb
+          sudo dpkg -i migrate.deb
+          sudo rm migrate.deb
 
       - name: Run migrations
         run: make migrate-up
