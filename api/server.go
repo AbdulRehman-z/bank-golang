@@ -28,6 +28,10 @@ func NewServer(store *db.Store) *Server {
 	}
 
 	app.Post("/accounts", server.createAccountHandler)
+	app.Get("/accounts/:id", server.getAccountHandler)
+	app.Get("/accounts", server.listAccountsHandler)
+	app.Put("/accounts", server.updateAccountHandler)
+	app.Delete("/accounts/:id", server.deleteAccountHandler)
 
 	return server
 
