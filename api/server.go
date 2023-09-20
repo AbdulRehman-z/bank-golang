@@ -30,10 +30,7 @@ func NewServer(store *db.Store) *Server {
 	app.Post("/accounts", server.createAccountHandler)
 
 	return server
-	// return &Server{
-	// 	store:  store,
-	// 	router: app,
-	// }
+
 }
 
 func (server *Server) Start(listenAddr string) error {
