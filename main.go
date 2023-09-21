@@ -36,7 +36,7 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(&store)
+	server := api.NewServer(store)
 	// fmt.Println("Starting server on")
 	log.Fatal(server.Start(*listenAddr))
 }

@@ -7,11 +7,11 @@ import (
 )
 
 type Server struct {
-	store  *db.Store
+	store  db.Store
 	router *fiber.App
 }
 
-func NewServer(store *db.Store) *Server {
+func NewServer(store db.Store) *Server {
 
 	app := fiber.New(fiber.Config{
 		// Global custom error handler
