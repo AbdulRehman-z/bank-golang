@@ -81,10 +81,7 @@ func CheckValidationErrors(req interface{}) *fiber.Error {
 			errMsgs = append(errMsgs, err.Message) // Use the custom error message
 		}
 
-		return &fiber.Error{
-			Code:    fiber.ErrBadRequest.Code,
-			Message: strings.Join(errMsgs, " and "),
-		}
+		return fiber.NewError(fiber.StatusBadRequest, strings.Join(errMsgs, " and "))
 	}
 	return nil
 }
