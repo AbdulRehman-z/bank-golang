@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"fmt"
 
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
@@ -43,7 +44,7 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 }
 
 // getAccountHandler gets an account by id
-func (server *Server) getAccountHandler(c *fiber.Ctx) error {
+func (server *Server) GetAccount(c *fiber.Ctx) error {
 
 	req := new(types.GetAccountRequest)
 	// get the uri param
@@ -54,11 +55,23 @@ func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 	if err := util.CheckValidationErrors(req); err != nil {
 		return err
 	}
+	fmt.Println("hello world-----------------------------------")
 
 	// get the account from the database
 	account, err := server.store.GetAccount(c.Context(), req.ID)
 	if err != nil {
-		return fmt.Errorf("failed to get account: %w", err)
+		if err == sql.ErrNoRows {
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusNotFound,
+				"success": false,
+				"message": "Account not found",
+			})
+		} else {
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusInternalServerError,
+				"success": false,
+			})
+		}
 	}
 
 	return c.JSON(fiber.Map{
