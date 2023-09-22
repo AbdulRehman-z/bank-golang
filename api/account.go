@@ -44,7 +44,7 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 }
 
 // getAccountHandler gets an account by id
-func (server *Server) GetAccount(c *fiber.Ctx) error {
+func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 
 	req := new(types.GetAccountRequest)
 	// get the uri param
@@ -92,7 +92,11 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 		Offset: (int32(query.PageID) - 1) * int32(query.PageSize),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to list accounts: %w", err)
+		if err == sql.ErrNoRows {
+			fiber.NewError(fiber.StatusNotFound, "Account not found")
+		} else {
+			fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+		}
 	}
 
 	return c.JSON(fiber.Map{
