@@ -15,7 +15,7 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 
 	req := new(types.CreateAccountRequest)
 	if err := c.BodyParser(&req); err != nil {
-		return fmt.Errorf("failed to parse request body: %w", err)
+		return fiber.NewError(fiber.StatusBadRequest, "failed to parse body")
 	}
 
 	// validate the request
@@ -32,10 +32,10 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 	// save the account in the database
 	account, err := server.store.CreateAccount(c.Context(), arg)
 	if err != nil {
-		return fmt.Errorf("failed to create account: %w", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"success": true,
 		"message": "Account created successfully",
 		"data":    account,
@@ -59,9 +59,9 @@ func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 	account, err := server.store.GetAccount(c.Context(), req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			fiber.NewError(fiber.StatusNotFound, "Account not found")
+			return fiber.NewError(fiber.StatusNotFound, "Account not found")
 		} else {
-			fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+			return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 		}
 	}
 
@@ -76,9 +76,12 @@ func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 // listAccountsHandler lists all accounts
 func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 	// Parse the query parameters using c.QueryParser()
+	fmt.Println("1st ---------------------------------------------------")
 	query := new(types.ListAccountsRequest)
-	if err := c.QueryParser(query); err != nil {
-		return fmt.Errorf("failed to parse query params: %w", err)
+	if err := c.QueryParser(&query); err != nil {
+		fmt.Println("2nd ---------------------------------------------------")
+
+		return fiber.NewError(fiber.StatusBadRequest, "failed to parse query parameters")
 	}
 
 	// Validate the request
