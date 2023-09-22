@@ -55,22 +55,13 @@ func (server *Server) GetAccount(c *fiber.Ctx) error {
 	if err := util.CheckValidationErrors(req); err != nil {
 		return err
 	}
-	fmt.Println("hello world-----------------------------------")
-
 	// get the account from the database
 	account, err := server.store.GetAccount(c.Context(), req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(fiber.Map{
-				"status":  fiber.StatusNotFound,
-				"success": false,
-				"message": "Account not found",
-			})
+			fiber.NewError(fiber.StatusNotFound, "Account not found")
 		} else {
-			return c.JSON(fiber.Map{
-				"status":  fiber.StatusInternalServerError,
-				"success": false,
-			})
+			fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 		}
 	}
 
