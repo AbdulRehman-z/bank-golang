@@ -308,7 +308,105 @@ func TestListAccountsAPI(t *testing.T) {
 			tc.checkResp(t, response)
 		})
 	}
+}
 
+func TestUpdateAccountAPI(t *testing.T) {
+	account := randomAccount()
+
+	testCases := []struct {
+		name       string
+		body       any
+		buildStubs func(store *mockdb.MockStore)
+		checkResp  func(t *testing.T, resp *http.Response)
+	}{
+		{
+			name: "UpdateAccountSuccess",
+			body: types.UpdateAccountRequest{
+				ID:      int64(2),
+				Balance: util.GenerateRandomMoney(),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					UpdateAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(account, nil)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusOK, resp.StatusCode)
+				// requireBodyMatchAccount(t, resp.Body, account)
+				requireBodyMatch(t, resp.Body, account)
+			},
+		},
+		{
+			name: "InvalidRequestBody",
+			body: "DAWDW",
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					UpdateAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			},
+		},
+		{
+			name: "InvalidRequestFields",
+			body: types.UpdateAccountRequest{
+				ID:      int64(2),
+				Balance: -1,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					UpdateAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			},
+		},
+		{
+			name: "DatabaseError",
+			body: types.UpdateAccountRequest{
+				ID:      int64(2),
+				Balance: util.GenerateRandomMoney(),
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					UpdateAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.Account{}, sql.ErrConnDone)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := NewServer(store)
+
+			payload, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			request, err := http.NewRequest(http.MethodPut, "/accounts", bytes.NewBuffer(payload))
+			require.NoError(t, err)
+			request.Header.Set("Content-Type", "application/json")
+			response, err := server.router.Test(request)
+			fmt.Printf("response: %v\n", response)
+			fmt.Printf("err: %v\n", err)
+			require.NoError(t, err)
+
+			tc.checkResp(t, response)
+		})
+	}
 }
 
 func randomAccount() db.Account {
