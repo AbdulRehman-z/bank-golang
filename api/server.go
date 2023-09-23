@@ -41,8 +41,7 @@ func NewServer(store db.Store) *Server {
 
 	app.Use(func(c *fiber.Ctx) error {
 		// only json is allowed over post requests
-
-		if c.Method() == "POST" {
+		if c.Method() == "POST" || c.Method() == "PUT" {
 			if c.Get("Content-Type") != "application/json" {
 				return fiber.NewError(fiber.StatusUnsupportedMediaType, "Content-Type must be application/json")
 			}
@@ -61,6 +60,8 @@ func NewServer(store db.Store) *Server {
 	app.Get("/accounts", server.listAccountsHandler)
 	app.Put("/accounts", server.updateAccountHandler)
 	app.Delete("/accounts/:id", server.deleteAccountHandler)
+
+	app.Post("/transfers", server.createTransferHandler)
 
 	return server
 
