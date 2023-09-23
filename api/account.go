@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"fmt"
 
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/types"
@@ -10,12 +9,25 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Error messages
+const (
+	FAILED_TO_PARSE_BODY         = "failed to parse body"
+	FAILED_TO_PARSE_QUERY_PARAMS = "failed to parse query parameters"
+	FAILED_TO_DELETE_ACCOUNT     = "failed to delete account"
+	FAILED_TO_UPDATE_ACCOUNT     = "failed to update account"
+	FAILED_TO_CREATE_ACCOUNT     = "failed to create account"
+	FAILED_TO_GET_ACCOUNT        = "failed to get account"
+	FAILED_TO_LIST_ACCOUNTS      = "failed to list accounts"
+	ACCOUNT_NOT_FOUND            = "account not found"
+	INTERNAL_SERVER_ERROR        = "internal server error"
+)
+
 // createAccountHandler creates a new account
 func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 
 	var req types.CreateAccountRequest
 	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "failed to parse body")
+		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
 	}
 
 	// validate the request
@@ -32,10 +44,10 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 	// save the account in the database
 	account, err := server.store.CreateAccount(c.Context(), arg)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+	return c.Status(fiber.StatusCreated).JSON(&fiber.Map{
 		"success": true,
 		"message": "Account created successfully",
 		"data":    account,
@@ -59,13 +71,13 @@ func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 	account, err := server.store.GetAccount(c.Context(), req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fiber.NewError(fiber.StatusNotFound, "Account not found")
+			return fiber.NewError(fiber.StatusNotFound, ACCOUNT_NOT_FOUND)
 		} else {
-			return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+			return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 		}
 	}
 
-	return c.JSON(fiber.Map{
+	return c.JSON(&fiber.Map{
 		"success": true,
 		"message": "Account retrieved successfully",
 		"data":    account,
@@ -78,11 +90,11 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 	var query types.ListAccountsRequest
 
 	if err := c.QueryParser(&query); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "failed to parse query parameters")
+		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_QUERY_PARAMS)
 	}
 
 	if query.PageID == 0 && query.PageSize == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "failed to parse query parameters")
+		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_QUERY_PARAMS)
 	}
 
 	// Validate the request
@@ -98,12 +110,12 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fiber.NewError(fiber.StatusNotFound, "Account not found")
+			return fiber.NewError(fiber.StatusNotFound, ACCOUNT_NOT_FOUND)
 		}
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"success": true,
 		"message": "Accounts retrieved successfully",
 		"data":    accounts,
@@ -115,7 +127,7 @@ func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 
 	req := new(types.UpdateAccountRequest)
 	if err := c.BodyParser(&req); err != nil {
-		return fmt.Errorf("failed to parse request body: %w", err)
+		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
 	}
 
 	// validate the request
@@ -129,10 +141,10 @@ func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 		Balance: req.Balance,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update account: %w", err)
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"success": true,
 		"message": "Account updated successfully",
 		"data":    account,
@@ -157,10 +169,10 @@ func (server *Server) deleteAccountHandler(c *fiber.Ctx) error {
 	// delete the account from the database
 	err := server.store.DeleteAccount(c.Context(), req.ID)
 	if err != nil {
-		return fmt.Errorf("failed to delete account: %w", err)
+		return fiber.NewError(fiber.StatusInternalServerError, FAILED_TO_DELETE_ACCOUNT)
 	}
 
-	return c.JSON(fiber.Map{
+	return c.JSON(&fiber.Map{
 		"success": true,
 		"message": "Account deleted successfully",
 	})
