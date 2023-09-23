@@ -409,6 +409,77 @@ func TestUpdateAccountAPI(t *testing.T) {
 	}
 }
 
+func TestDeleteAccountAPI(t *testing.T) {
+
+	testCases := []struct {
+		name       string
+		accountID  int64
+		buildStubs func(store *mockdb.MockStore)
+		checkResp  func(t *testing.T, resp *http.Response)
+	}{
+		{
+			name:      "DeleteAccountSuccess",
+			accountID: 2,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusOK, resp.StatusCode)
+			},
+		},
+		{
+			name:      "InvalidRequestField",
+			accountID: 0,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			},
+		},
+		{
+			name:      "DatabaseError",
+			accountID: 2,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					DeleteAccount(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(sql.ErrConnDone)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := NewServer(store)
+
+			url := fmt.Sprintf("/accounts/%d", tc.accountID)
+			request, err := http.NewRequest(http.MethodDelete, url, nil)
+			require.NoError(t, err)
+
+			response, err := server.router.Test(request)
+			require.NoError(t, err)
+
+			tc.checkResp(t, response)
+		})
+	}
+}
+
 func randomAccount() db.Account {
 	return db.Account{
 		ID:       util.GenerateRandomInt(1, 1000),
