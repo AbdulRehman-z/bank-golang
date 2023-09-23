@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 
 	mockdb "github.com/AbdulRehman-z/bank-golang/db/mock"
@@ -132,8 +133,8 @@ func TestCreateAccountAPI(t *testing.T) {
 		{
 			name: "InvalidRequestFields",
 			body: types.CreateAccountRequest{
-				Owner:    account.Owner,
-				Currency: "invalid currency",
+				Owner:    "jj's",
+				Currency: account.Currency,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -313,6 +314,10 @@ func TestListAccountsAPI(t *testing.T) {
 func TestUpdateAccountAPI(t *testing.T) {
 	account := randomAccount()
 
+	// convert balance(string) to balance(string)
+	balance, err := strconv.ParseFloat(account.Balance, 64)
+	require.NoError(t, err)
+
 	testCases := []struct {
 		name       string
 		body       any
@@ -323,7 +328,7 @@ func TestUpdateAccountAPI(t *testing.T) {
 			name: "UpdateAccountSuccess",
 			body: types.UpdateAccountRequest{
 				ID:      int64(2),
-				Balance: util.GenerateRandomMoney(),
+				Balance: int64(balance),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -368,7 +373,7 @@ func TestUpdateAccountAPI(t *testing.T) {
 			name: "DatabaseError",
 			body: types.UpdateAccountRequest{
 				ID:      int64(2),
-				Balance: util.GenerateRandomMoney(),
+				Balance: int64(balance),
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -502,7 +507,7 @@ func requireBodyMatch(t *testing.T, body io.Reader, expected interface{}) {
 		require.True(t, ok)
 		require.Equal(t, expected.ID, int64(account["id"].(float64)))
 		require.Equal(t, expected.Owner, account["owner"].(string))
-		require.Equal(t, expected.Balance, int64(account["balance"].(float64)))
+		require.Equal(t, expected.Balance, account["balance"].(string))
 	case []db.Account:
 		accounts, ok := response.Data.([]interface{})
 		require.True(t, ok)
@@ -512,7 +517,7 @@ func requireBodyMatch(t *testing.T, body io.Reader, expected interface{}) {
 			require.True(t, ok)
 			require.Equal(t, account.ID, int64(accountData["id"].(float64)))
 			require.Equal(t, account.Owner, accountData["owner"].(string))
-			require.Equal(t, account.Balance, int64(accountData["balance"].(float64)))
+			require.Equal(t, account.Balance, accountData["balance"].(string))
 		}
 	default:
 		t.Fatalf("unexpected type: %T", expected)

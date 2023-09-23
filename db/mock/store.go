@@ -143,6 +143,21 @@ func (mr *MockStoreMockRecorder) GetEntry(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEntry", reflect.TypeOf((*MockStore)(nil).GetEntry), arg0, arg1)
 }
 
+// GetExchangeRate mocks base method.
+func (m *MockStore) GetExchangeRate(arg0 context.Context, arg1 string) (db.ExchangeRate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExchangeRate", arg0, arg1)
+	ret0, _ := ret[0].(db.ExchangeRate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExchangeRate indicates an expected call of GetExchangeRate.
+func (mr *MockStoreMockRecorder) GetExchangeRate(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExchangeRate", reflect.TypeOf((*MockStore)(nil).GetExchangeRate), arg0, arg1)
+}
+
 // GetTransfer mocks base method.
 func (m *MockStore) GetTransfer(arg0 context.Context, arg1 int64) (db.Transfer, error) {
 	m.ctrl.T.Helper()
@@ -201,6 +216,20 @@ func (m *MockStore) ListTransfers(arg0 context.Context, arg1 db.ListTransfersPar
 func (mr *MockStoreMockRecorder) ListTransfers(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTransfers", reflect.TypeOf((*MockStore)(nil).ListTransfers), arg0, arg1)
+}
+
+// SaveExchangeRates mocks base method.
+func (m *MockStore) SaveExchangeRates(arg0 context.Context, arg1 db.SaveExchangeRatesParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveExchangeRates", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveExchangeRates indicates an expected call of SaveExchangeRates.
+func (mr *MockStoreMockRecorder) SaveExchangeRates(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveExchangeRates", reflect.TypeOf((*MockStore)(nil).SaveExchangeRates), arg0, arg1)
 }
 
 // TransferTx mocks base method.

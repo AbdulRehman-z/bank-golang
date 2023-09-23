@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 )
 
 type Store interface {
@@ -72,7 +73,7 @@ func (store *SqlStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
 			FromAccountID: arg.FromAccountID,
 			ToAccountID:   arg.ToAccountID,
-			Amount:        arg.Amount,
+			Amount:        strconv.FormatInt(arg.Amount, 10),
 		})
 		if err != nil {
 			return fmt.Errorf("context: Transfer, err: %v", err)
@@ -82,7 +83,7 @@ func (store *SqlStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		// fmt.Println(txName, "create entry 1")
 		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.FromAccountID,
-			Amount:    -arg.Amount,
+			Amount:    strconv.FormatInt(-arg.Amount, 10),
 		})
 		if err != nil {
 			return fmt.Errorf("context: FromEntry, err: %v", err)
@@ -91,7 +92,7 @@ func (store *SqlStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		// fmt.Println(txName, "create entry 2")
 		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.ToAccountID,
-			Amount:    +arg.Amount,
+			Amount:    strconv.FormatInt(+arg.Amount, 10),
 		})
 		if err != nil {
 			return fmt.Errorf("context: ToEntry, err: %v", err)
@@ -126,7 +127,7 @@ func addMoney(ctx context.Context,
 
 	account1, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
 		ID:     account1ID,
-		Amount: amount1,
+		Amount: strconv.FormatInt(amount1, 10),
 	})
 	if err != nil {
 		return
@@ -134,7 +135,7 @@ func addMoney(ctx context.Context,
 
 	account2, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
 		ID:     account2ID,
-		Amount: amount2,
+		Amount: strconv.FormatInt(amount2, 10),
 	})
 
 	return
