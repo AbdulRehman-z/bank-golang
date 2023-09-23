@@ -15,8 +15,8 @@ type (
 
 	// ListAccountsRequest defines the request body for listing accounts
 	ListAccountsRequest struct {
-		PageID   int32 `validate:"required,gte=1"` // Required field, min 1
-		PageSize int32 `validate:"required,lte=5"` // Required field, min 5
+		PageID   int64 `validate:"required,gte=1"` // Required field, min 1
+		PageSize int64 `validate:"required,lte=5"` // Required field, min 5
 	}
 
 	// UpdateAccountRequest defines the request body for updating an account
