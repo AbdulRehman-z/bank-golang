@@ -20,6 +20,7 @@ const (
 	FAILED_TO_LIST_ACCOUNTS      = "failed to list accounts"
 	ACCOUNT_NOT_FOUND            = "account not found"
 	INTERNAL_SERVER_ERROR        = "internal server error"
+	CURRENCY_MISMATCH            = "currency mismatched"
 )
 
 // createAccountHandler creates a new account
@@ -125,7 +126,7 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 // updateAccountHandler updates an account
 func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 
-	req := new(types.UpdateAccountRequest)
+	var req types.UpdateAccountRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
 	}
