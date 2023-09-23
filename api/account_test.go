@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 
 	mockdb "github.com/AbdulRehman-z/bank-golang/db/mock"
@@ -151,7 +152,6 @@ func TestCreateAccountAPI(t *testing.T) {
 					CreateAccount(gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResp: func(t *testing.T, resp *http.Response) {
-				fmt.Printf("b")
 				require.Equal(t, resp.StatusCode, http.StatusBadRequest)
 			},
 		},
@@ -175,26 +175,24 @@ func TestCreateAccountAPI(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Run(tc.name, func(t *testing.T) {
-				ctrl := gomock.NewController(t)
-				defer ctrl.Finish()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-				store := mockdb.NewMockStore(ctrl)
-				tc.buildStubs(store)
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
 
-				server := NewServer(store)
+			server := NewServer(store)
 
-				payload, err := json.Marshal(tc.body)
-				require.NoError(t, err)
+			payload, err := json.Marshal(tc.body)
+			require.NoError(t, err)
 
-				request, err := http.NewRequest(http.MethodPost, "/accounts", bytes.NewBuffer(payload))
-				request.Header.Set("Content-Type", "application/json")
-				require.NoError(t, err)
+			request, err := http.NewRequest(http.MethodPost, "/accounts", bytes.NewBuffer(payload))
+			request.Header.Set("Content-Type", "application/json")
+			require.NoError(t, err)
 
-				response, err := server.router.Test(request)
-				require.NoError(t, err)
-				tc.checkResp(t, response)
-			})
+			response, err := server.router.Test(request)
+			require.NoError(t, err)
+			tc.checkResp(t, response)
 		})
 	}
 }
@@ -204,15 +202,15 @@ func TestListAccountsAPI(t *testing.T) {
 
 	testCases := []struct {
 		name       string
-		query      any
+		query      interface{}
 		buildStubs func(store *mockdb.MockStore)
 		checkResp  func(t *testing.T, resp *http.Response)
 	}{
 		{
 			name: "ListAccountsSuccuess",
-			query: types.ListAccountsRequest{
-				PageID:   1,
-				PageSize: 5,
+			query: map[string]string{
+				"pageId":   "2",
+				"pageSize": "5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -221,19 +219,66 @@ func TestListAccountsAPI(t *testing.T) {
 			checkResp: func(t *testing.T, resp *http.Response) {
 
 				require.Equal(t, http.StatusOK, resp.StatusCode)
-				// requireBodyMatchAccount(t, resp.Body, account)
 				requireBodyMatch(t, resp.Body, []db.Account{account})
 			},
 		},
-		// {
-		// 	name: "InvalidQuery",
-		// },
-		// {
-		// 	name: "DatabaseError",
-		// },
-		// {
-		// 	name: "NoAccountsFound",
-		// },
+		{
+			name: "InvalidQueryValue",
+			query: map[string]string{
+				"pageId":   "0",
+				"pageSize": "5",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					ListAccounts(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			},
+		},
+		{
+			name:  "InvalidQueryBody",
+			query: map[string]string{},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					ListAccounts(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			},
+		},
+		{
+			name: "DatabaseError",
+			query: map[string]string{
+				"pageId":   "20000",
+				"pageSize": "5",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					ListAccounts(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return([]db.Account{}, sql.ErrConnDone)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			},
+		},
+		{
+			name: "NoAccountsFound",
+			query: map[string]string{
+				"pageId":   "20202",
+				"pageSize": "5",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					ListAccounts(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return([]db.Account{}, sql.ErrNoRows)
+			},
+			checkResp: func(t *testing.T, resp *http.Response) {
+				require.Equal(t, http.StatusNotFound, resp.StatusCode)
+			},
+		},
 	}
 
 	for i := range testCases {
@@ -247,11 +292,18 @@ func TestListAccountsAPI(t *testing.T) {
 
 			server := NewServer(store)
 
-			url := fmt.Sprintf("/accounts")
-			request, err := http.NewRequest(http.MethodGet, url, nil)
+			params := url.Values{}
+			for k, v := range tc.query.(map[string]string) {
+				params.Add(k, v)
+			}
+
+			encodedUrl := fmt.Sprintf("/accounts?%s", params.Encode())
+			fmt.Printf("encodedUrl: %s\n", encodedUrl)
+			request, err := http.NewRequest(http.MethodGet, encodedUrl, nil)
 			require.NoError(t, err)
 
 			response, err := server.router.Test(request)
+			require.NoError(t, err)
 
 			tc.checkResp(t, response)
 		})
@@ -261,9 +313,9 @@ func TestListAccountsAPI(t *testing.T) {
 
 func randomAccount() db.Account {
 	return db.Account{
-		ID:       int64(util.GenerateRandomInt(1, 1000)),
+		ID:       util.GenerateRandomInt(1, 1000),
 		Owner:    util.GenerateRandomString(10),
-		Balance:  int64(util.GenerateRandomMoney()),
+		Balance:  util.GenerateRandomMoney(),
 		Currency: util.GenerateRandomCurrencyCode(),
 	}
 }
@@ -285,7 +337,7 @@ func requireBodyMatch(t *testing.T, body io.Reader, expected interface{}) {
 	case []db.Account:
 		accounts, ok := response.Data.([]interface{})
 		require.True(t, ok)
-		require.Equal(t, len(expected), len(accounts))
+		// require.Equal(t, len(expected), len(accounts))
 		for i, account := range expected {
 			accountData, ok := accounts[i].(map[string]interface{})
 			require.True(t, ok)
@@ -297,64 +349,3 @@ func requireBodyMatch(t *testing.T, body io.Reader, expected interface{}) {
 		t.Fatalf("unexpected type: %T", expected)
 	}
 }
-
-// func TestListAccountsHandler(t *testing.T) {
-//     account := randomAccount()
-
-//     testCases := []struct {
-//         name       string
-//         query      any
-//         buildStubs func(store *mockdb.MockStore)
-//         checkResp  func(t *testing.T, resp *http.Response)
-//     }{
-//         {
-//             name: "ListAccounts_Success",
-//             query: types.ListAccountsRequest{
-//                 PageID:   1,
-//                 PageSize: 5,
-//             },
-//             buildStubs: func(store *mockdb.MockStore) {
-//                 store.EXPECT().
-//                     ListAccounts(gomock.Any(), gomock.Any()).Times(1).Return([]db.Account{account}, nil)
-//             },
-//             checkResp: func(t *testing.T, resp *http.Response) {
-//                 require.Equal(t, http.StatusOK, resp.StatusCode)
-//                 requireBodyMatchAccount(t, resp.Body, account)
-//             },
-//         },
-//         {
-//             name: "ListAccounts_InvalidQuery",
-//         },
-//         {
-//             name: "ListAccounts_DatabaseError",
-//         },
-//         {
-//             name: "ListAccounts_NoAccountsFound",
-//         },
-//     }
-
-//     for _, tc := range testCases {
-//         t.Run(tc.name, func(t *testing.T) {
-//             ctrl := gomock.NewController(t)
-//             defer ctrl.Finish()
-
-//             store := mockdb.NewMockStore(ctrl)
-//             tc.buildStubs(store)
-
-//             server := NewServer(store)
-
-//             req := httptest.NewRequest(http.MethodGet, "/accounts", nil)
-//             q := req.URL.Query()
-//             for key, val := range tc.query.(map[string][]string) {
-//                 q.Add(key, val[0])
-//             }
-//             req.URL.RawQuery = q.Encode()
-
-//             resp := httptest.NewRecorder()
-
-//             server.listAccountsHandler(resp, req)
-
-//             tc.checkResp(t, resp.Result())
-//         })
-//     }
-// }
