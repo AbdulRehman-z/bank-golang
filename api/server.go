@@ -38,6 +38,19 @@ func NewServer(store db.Store) *Server {
 			// Return from handler
 		},
 	})
+
+	app.Use(func(c *fiber.Ctx) error {
+		// only json is allowed over post requests
+
+		if c.Method() == "POST" {
+			if c.Get("Content-Type") != "application/json" {
+				return fiber.NewError(fiber.StatusUnsupportedMediaType, "Content-Type must be application/json")
+			}
+		}
+
+		return c.Next()
+	})
+
 	server := &Server{
 		store:  store,
 		router: app,
