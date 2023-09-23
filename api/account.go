@@ -13,7 +13,7 @@ import (
 // createAccountHandler creates a new account
 func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 
-	req := new(types.CreateAccountRequest)
+	var req types.CreateAccountRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "failed to parse body")
 	}
@@ -75,12 +75,13 @@ func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 
 // listAccountsHandler lists all accounts
 func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
-	// Parse the query parameters using c.QueryParser()
-	fmt.Println("1st ---------------------------------------------------")
-	query := new(types.ListAccountsRequest)
-	if err := c.QueryParser(&query); err != nil {
-		fmt.Println("2nd ---------------------------------------------------")
+	var query types.ListAccountsRequest
 
+	if err := c.QueryParser(&query); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "failed to parse query parameters")
+	}
+
+	if query.PageID == 0 && query.PageSize == 0 {
 		return fiber.NewError(fiber.StatusBadRequest, "failed to parse query parameters")
 	}
 
@@ -91,15 +92,15 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 
 	// List all accounts from the database
 	accounts, err := server.store.ListAccounts(c.Context(), db.ListAccountsParams{
-		Limit:  int32(query.PageSize),
-		Offset: (int32(query.PageID) - 1) * int32(query.PageSize),
+		Limit:  int64(query.PageSize),
+		Offset: (int64(query.PageID) - 1) * int64(query.PageSize),
 	})
+
 	if err != nil {
 		if err == sql.ErrNoRows {
-			fiber.NewError(fiber.StatusNotFound, "Account not found")
-		} else {
-			fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
+			return fiber.NewError(fiber.StatusNotFound, "Account not found")
 		}
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	return c.JSON(fiber.Map{
