@@ -64,9 +64,9 @@ func generateErrorMessage(err validator.FieldError) string {
 		return fmt.Sprintf("%s should be at most %s characters long", err.Field(), err.Param())
 	case "oneof":
 		return fmt.Sprintf("%s must be one of %s", err.Field(), err.Param())
-	case "gt":
+	case "gte":
 		return fmt.Sprintf("%s must be greater than %s", err.Field(), err.Param())
-	case "lt":
+	case "lte":
 		return fmt.Sprintf("%s must be less than %s", err.Field(), err.Param())
 	default:
 		return fmt.Sprintf("%s is invalid", err.Field())
