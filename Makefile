@@ -30,5 +30,8 @@ rmtestcache:
 truncate:
 	docker exec -it postgresDb psql --username=postgres --dbname=bankDb --command "TRUNCATE TABLE entries, transfers, accounts CASCADE;"
 
+mock:
+	mockgen -destination db/mock/store.go -package mockdb github.com/AbdulRehman-z/bank-golang/db/sqlc Store	
+
 test:
 	go test -v -cover ./...
