@@ -3,7 +3,7 @@ package types
 type (
 	// CreateAccountRequest defines the request body for creating an account
 	CreateAccountRequest struct {
-		Owner    string `json:"owner" validate:"required,min=5,max=20"` // Required field, min 5 char long max 20
+		Owner    string `json:"owner" validate:"required,min=3,max=20"` // Required field, min 3 char long max 20
 		Currency string `json:"currency" validate:"required"`           // Required field, one of USD, EUR, CAD
 	}
 
