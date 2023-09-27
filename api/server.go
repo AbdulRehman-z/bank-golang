@@ -63,6 +63,9 @@ func NewServer(store db.Store) *Server {
 
 	app.Post("/transfers", server.createTransferHandler)
 
+	app.Post("/users", server.createUserHandler)
+	app.Get("/users/:username", server.getUserHandler)
+
 	return server
 
 }
