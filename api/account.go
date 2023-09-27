@@ -23,6 +23,10 @@ const (
 	ACCOUNT_NOT_FOUND            = "account not found"
 	INTERNAL_SERVER_ERROR        = "internal server error"
 	CURRENCY_MISMATCH            = "currency mismatched"
+	FAILED_TO_CREATE_USER        = "failed to create user"
+	FAILED_TO_GET_USER           = "failed to get user"
+	USER_ALREADY_EXISTS          = "user already exists"
+	BAD_REQUEST                  = "bad request"
 )
 
 // createAccountHandler creates a new account
@@ -30,18 +34,15 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 
 	var req types.CreateAccountRequest
 	if err := c.BodyParser(&req); err != nil {
-		fmt.Println("1st -------------------------------------------------")
 		fmt.Println("err: ", err)
 		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
 	}
-	fmt.Println("2nd -------------------------------------------------")
 
 	// validate the request
 	if err := util.CheckValidationErrors(req); err != nil {
 		fmt.Println("err: ", err)
 		return err
 	}
-	fmt.Println("3rd -------------------------------------------------")
 
 	// create a new account
 	arg := db.CreateAccountParams{
@@ -49,10 +50,12 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 		Balance:  "0",
 		Currency: req.Currency,
 	}
+
 	// save the account in the database
 	account, err := server.store.CreateAccount(c.Context(), arg)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+		fmt.Println("err: ", err)
+		return fiber.NewError(fiber.StatusBadRequest, "account with this owner already exists")
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(&fiber.Map{
@@ -60,7 +63,6 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 		"message": "Account created successfully",
 		"data":    account,
 	})
-
 }
 
 // getAccountHandler gets an account by id
