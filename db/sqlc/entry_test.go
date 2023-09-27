@@ -12,7 +12,7 @@ func createRandomEntry(t *testing.T, account Account) Entry {
 
 	args := CreateEntryParams{
 		AccountID: account.ID,
-		Amount:    int64(util.GenerateRandomMoney()),
+		Amount:    util.GenerateRandomMoney(),
 	}
 
 	entry, err := testQueries.CreateEntry(context.Background(), args)

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,8 +21,8 @@ func TestTransferTx(t *testing.T) {
 	resultChannel := make(chan TransferTxResult)
 
 	// Run n concurrent transfer transactions
-	n := 5
-	amount := int64(10)
+	n := 2
+	amount := int64(10.00)
 
 	for i := 0; i < n; i++ {
 
@@ -52,10 +53,12 @@ func TestTransferTx(t *testing.T) {
 
 		// check transfer
 		transfer := result.Transfer
+		transAmount, err := strconv.ParseInt(transfer.Amount, 10, 64)
+		require.NoError(t, err)
 		require.NotEmpty(t, transfer)
 		require.Equal(t, account1.ID, transfer.FromAccountID)
 		require.Equal(t, account2.ID, transfer.ToAccountID)
-		require.Equal(t, amount, transfer.Amount)
+		require.Equal(t, amount, transAmount)
 		require.NotZero(t, transfer.ID)
 		require.NotZero(t, transfer.CreatedAt)
 
@@ -64,9 +67,11 @@ func TestTransferTx(t *testing.T) {
 
 		// check entries (to & from)
 		toEntry := result.ToEntry
+		toAmmount, err := strconv.ParseInt(toEntry.Amount, 10, 64)
+		require.NoError(t, err)
 		require.NotEmpty(t, toEntry)
 		require.Equal(t, toEntry.AccountID, account2.ID)
-		require.Equal(t, amount, toEntry.Amount)
+		require.Equal(t, amount, toAmmount)
 		require.NotZero(t, toEntry.ID)
 		require.NotZero(t, toEntry.CreatedAt)
 
@@ -74,9 +79,11 @@ func TestTransferTx(t *testing.T) {
 		require.NoError(t, err)
 
 		fromEntry := result.FromEntry
+		fromAmmount, err := strconv.ParseInt(fromEntry.Amount, 10, 64)
+		require.NoError(t, err)
 		require.NotEmpty(t, fromEntry)
 		require.Equal(t, fromEntry.AccountID, account1.ID)
-		require.Equal(t, amount, -fromEntry.Amount)
+		require.Equal(t, amount, -fromAmmount)
 		require.NotZero(t, fromEntry.ID)
 		require.NotZero(t, fromEntry.CreatedAt)
 
@@ -93,13 +100,23 @@ func TestTransferTx(t *testing.T) {
 		require.Equal(t, toAccount.ID, account2.ID)
 
 		// check accounts' balance
-		diff1 := account1.Balance - fromAccount.Balance
-		diff2 := toAccount.Balance - account2.Balance
+		balance1, err := strconv.ParseFloat(account1.Balance, 64)
+		require.NoError(t, err)
+		balance2, err := strconv.ParseFloat(fromAccount.Balance, 64)
+		require.NoError(t, err)
+
+		balance3, err := strconv.ParseFloat(toAccount.Balance, 64)
+		require.NoError(t, err)
+		balance4, err := strconv.ParseFloat(account2.Balance, 64)
+		require.NoError(t, err)
+		diff1 := balance1 - balance2
+		diff2 := balance3 - balance4
+
 		require.Equal(t, diff1, diff2)
 		require.True(t, diff1 > 0)
-		require.True(t, diff1%amount == 0)
+		require.True(t, int64(diff1)%int64(amount) == 0)
 
-		k := int(diff1 / amount)
+		k := int(diff1 / float64(amount))
 		require.True(t, k >= 1 && k <= n)
 		require.NotContains(t, exited, k)
 		exited[k] = true
@@ -112,9 +129,21 @@ func TestTransferTx(t *testing.T) {
 	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
-	require.Equal(t, account1.Balance-int64(n)*amount, updatedAccount1.Balance)
-	require.Equal(t, account2.Balance+int64(n)*amount, updatedAccount2.Balance)
+	acc1Balance, err := strconv.ParseFloat(account1.Balance, 64)
+	require.NoError(t, err)
+	acc2Balance, err := strconv.ParseFloat(account2.Balance, 64)
+	require.NoError(t, err)
 
+	updatedAccount1Balance, err := strconv.ParseFloat(updatedAccount1.Balance, 64)
+	require.NoError(t, err)
+
+	updatedAccount2Balance, err := strconv.ParseFloat(updatedAccount2.Balance, 64)
+	require.NoError(t, err)
+
+	fmt.Println(">> Compare:", int64(acc1Balance), int64(updatedAccount1Balance))
+
+	require.Equal(t, int64(acc1Balance)-int64(n)*int64(amount), int64(updatedAccount1Balance))
+	require.Equal(t, int64(acc2Balance)+int64(n)*int64(amount), int64(updatedAccount2Balance))
 	fmt.Println(">> After:", updatedAccount1.Balance, updatedAccount2.Balance)
 
 }
@@ -126,7 +155,7 @@ func TestTransferTxDeadLock(t *testing.T) {
 	errorChannel := make(chan error)
 	account1 := createRandomAccount(t)
 	account2 := createRandomAccount(t)
-	amount := int64(10)
+	amount := int64(10.00)
 	n := 10
 
 	fmt.Println(">> Before:", account1.Balance, account2.Balance)

@@ -2,6 +2,8 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
+	"strconv"
 
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/types"
@@ -28,18 +30,23 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 
 	var req types.CreateAccountRequest
 	if err := c.BodyParser(&req); err != nil {
+		fmt.Println("1st -------------------------------------------------")
+		fmt.Println("err: ", err)
 		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
 	}
+	fmt.Println("2nd -------------------------------------------------")
 
 	// validate the request
 	if err := util.CheckValidationErrors(req); err != nil {
+		fmt.Println("err: ", err)
 		return err
 	}
+	fmt.Println("3rd -------------------------------------------------")
 
 	// create a new account
 	arg := db.CreateAccountParams{
 		Owner:    req.Owner,
-		Balance:  0,
+		Balance:  "0",
 		Currency: req.Currency,
 	}
 	// save the account in the database
@@ -105,8 +112,8 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 
 	// List all accounts from the database
 	accounts, err := server.store.ListAccounts(c.Context(), db.ListAccountsParams{
-		Limit:  int64(query.PageSize),
-		Offset: (int64(query.PageID) - 1) * int64(query.PageSize),
+		Limit:  int32(query.PageSize),
+		Offset: (int32(query.PageID) - 1) * int32(query.PageSize),
 	})
 
 	if err != nil {
@@ -137,10 +144,13 @@ func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 	}
 
 	// update the account in the database
+	// convert req.Balance to string
+
 	account, err := server.store.UpdateAccount(c.Context(), db.UpdateAccountParams{
 		ID:      req.ID,
-		Balance: req.Balance,
+		Balance: strconv.FormatInt(req.Balance, 10),
 	})
+
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}

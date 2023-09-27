@@ -36,15 +36,35 @@ func GenerateRandomOwnerName() string {
 }
 
 // GenerateRandomMoney generates a random amount of money between 0 and 1000.
-func GenerateRandomMoney() int64 {
-	return GenerateRandomInt(0, 1000)
+func GenerateRandomMoney() string {
+	// GENERATE RANDOM MONEY IN Float FORMAT 1.00
+	return fmt.Sprintf("%.2f", float64(GenerateRandomInt(0, 1000000))/100)
 }
 
-// GenerateRandomCurrencyCode generates a random currency code (USD, EUR, CAD).
+// GenerateRandomCurrencyCode generates a random currency code at least 10.
 func GenerateRandomCurrencyCode() string {
-	currencyCodes := []string{"USD", "EUR", "CAD"}
-	randomIndex := random.Intn(len(currencyCodes))
-	return currencyCodes[randomIndex]
+
+	currencyCodes := map[string]string{
+		"USD": "USD",
+		"EUR": "EUR",
+		"GBP": "GBP",
+		"RUB": "RUB",
+		"INR": "INR",
+		"CAD": "CAD",
+		"PKR": "PKR",
+		"JPY": "JPY",
+		"KWD": "KWD",
+		"QAR": "QAR",
+		"OMR": "OMR",
+		"AED": "AED",
+	}
+	// select random currency code form above map
+	var keys []string
+	for k := range currencyCodes {
+		keys = append(keys, k)
+	}
+	return keys[random.Intn(len(keys))]
+
 }
 
 // GenerateRandomEmail generates a random email address with the format "randomstring@email.com".
