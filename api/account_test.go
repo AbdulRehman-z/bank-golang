@@ -210,8 +210,8 @@ func TestListAccountsAPI(t *testing.T) {
 		{
 			name: "ListAccountsSuccuess",
 			query: map[string]string{
-				"pageId":   "2",
-				"pageSize": "5",
+				"page_Id":   "2",
+				"page_Size": "5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -226,8 +226,8 @@ func TestListAccountsAPI(t *testing.T) {
 		{
 			name: "InvalidQueryValue",
 			query: map[string]string{
-				"pageId":   "0",
-				"pageSize": "5",
+				"page_id":   "0",
+				"page_size": "5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -251,8 +251,8 @@ func TestListAccountsAPI(t *testing.T) {
 		{
 			name: "DatabaseError",
 			query: map[string]string{
-				"pageId":   "20000",
-				"pageSize": "5",
+				"page_id":   "20000",
+				"page_size": "5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -267,8 +267,8 @@ func TestListAccountsAPI(t *testing.T) {
 		{
 			name: "NoAccountsFound",
 			query: map[string]string{
-				"pageId":   "20202",
-				"pageSize": "5",
+				"page_id":   "20202",
+				"page_size": "5",
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -299,7 +299,6 @@ func TestListAccountsAPI(t *testing.T) {
 			}
 
 			encodedUrl := fmt.Sprintf("/accounts?%s", params.Encode())
-			fmt.Printf("encodedUrl: %s\n", encodedUrl)
 			request, err := http.NewRequest(http.MethodGet, encodedUrl, nil)
 			require.NoError(t, err)
 
