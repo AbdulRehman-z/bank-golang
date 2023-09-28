@@ -1,11 +1,20 @@
 package types
 
+import "time"
+
 type (
 	CreateUserRequest struct {
-		Username       string `json:"username" validate:"required,min=3,max=32"`
-		HashedPassword string `json:"hashed_password" validate:"required,min=8"`
-		FullName       string `json:"full_name" validate:"required,min=3,max=32"`
-		Email          string `json:"email" validate:"required,email"`
+		Username string `json:"username" validate:"required,alpha,min=3,max=32"`
+		Password string `json:"password" validate:"required,min=8"`
+		FullName string `json:"full_name" validate:"required,min=3,max=32"`
+		Email    string `json:"email" validate:"required,email"`
+	}
+
+	CreateUserResponse struct {
+		Username  string    `json:"username"`
+		FullName  string    `json:"full_name"`
+		Email     string    `json:"email"`
+		CreatedAt time.Time `json:"created_at"`
 	}
 
 	GetUserRequest struct {
