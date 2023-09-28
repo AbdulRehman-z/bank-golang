@@ -18,11 +18,11 @@ func TestMain(m *testing.M) {
 	godotenv.Load("../../.env")
 	dbDriver, exists := os.LookupEnv("DB_DRIVER")
 	if !exists {
-		log.Fatal("DB_DRIVER environment variable not set")
+		dbDriver = "postgres"
 	}
 	dbSource, exists := os.LookupEnv("DB_URL")
 	if !exists {
-		log.Fatal("DB_URL environment variable not set")
+		dbSource = "postgres://postgres:password@localhost:5432/bankDb?sslmode=disable"
 	}
 
 	// Open a database connection
