@@ -7,37 +7,53 @@ import (
 	"github.com/AbdulRehman-z/bank-golang/types"
 	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/gofiber/fiber/v2"
+	"github.com/lib/pq"
 )
 
 func (server *Server) createUserHandler(c *fiber.Ctx) error {
 	var req types.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request")
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
 	if err := util.CheckValidationErrors(req); err != nil {
 		return err
 	}
 
+	hashedPassword, err := util.HashPassword(req.Password)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+	}
+
 	arg := db.CreateUserRequest{
 		Username:       req.Username,
-		HashedPassword: req.HashedPassword,
+		HashedPassword: hashedPassword,
 		FullName:       req.FullName,
 		Email:          req.Email,
 	}
 
 	user, err := server.store.CreateUser(c.Context(), arg)
 	if err != nil {
-		if err == sql.ErrConnDone {
-			return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "unique_violation", "foreign_key_violation":
+				return fiber.NewError(fiber.StatusBadRequest, BAD_REQUEST)
+			}
 		}
-		return fiber.NewError(fiber.StatusBadRequest, USER_ALREADY_EXISTS)
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+	}
+
+	response := types.CreateUserResponse{
+		Username:  user.Username,
+		FullName:  user.FullName,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(&fiber.Map{
 		"status":  "success",
 		"message": "user created",
-		"data":    user,
+		"data":    response,
 	})
 }
 
