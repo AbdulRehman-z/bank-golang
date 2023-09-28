@@ -54,8 +54,12 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 	// save the account in the database
 	account, err := server.store.CreateAccount(c.Context(), arg)
 	if err != nil {
+		if err == sql.ErrConnDone {
+			return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+		}
 		fmt.Println("err: ", err)
 		return fiber.NewError(fiber.StatusBadRequest, "account with this owner already exists")
+
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(&fiber.Map{

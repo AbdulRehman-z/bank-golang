@@ -133,7 +133,7 @@ func TestCreateAccountAPI(t *testing.T) {
 		{
 			name: "InvalidRequestFields",
 			body: types.CreateAccountRequest{
-				Owner:    "jj's",
+				Owner:    "jj",
 				Currency: account.Currency,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
