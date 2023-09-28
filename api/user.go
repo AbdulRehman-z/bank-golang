@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/types"
 	"github.com/AbdulRehman-z/bank-golang/util"
@@ -8,8 +10,7 @@ import (
 )
 
 func (server *Server) createUserHandler(c *fiber.Ctx) error {
-
-	var req types.CreateUserParams
+	var req types.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request")
 	}
@@ -18,21 +19,19 @@ func (server *Server) createUserHandler(c *fiber.Ctx) error {
 		return err
 	}
 
-	arg := &db.CreateUserParams{
+	arg := db.CreateUserRequest{
 		Username:       req.Username,
 		HashedPassword: req.HashedPassword,
 		FullName:       req.FullName,
 		Email:          req.Email,
 	}
 
-	// checks if the user already exists
-	if _, err := server.store.GetUser(c.Context(), arg.Username); err == nil {
-		return fiber.NewError(fiber.StatusBadRequest, USER_ALREADY_EXISTS)
-	}
-
-	user, err := server.store.CreateUser(c.Context(), *arg)
+	user, err := server.store.CreateUser(c.Context(), arg)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, FAILED_TO_CREATE_USER)
+		if err == sql.ErrConnDone {
+			return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+		}
+		return fiber.NewError(fiber.StatusBadRequest, USER_ALREADY_EXISTS)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(&fiber.Map{
@@ -44,14 +43,23 @@ func (server *Server) createUserHandler(c *fiber.Ctx) error {
 
 func (server *Server) getUserHandler(c *fiber.Ctx) error {
 
-	username := c.Params("username")
-	if username == "" {
-		return fiber.NewError(fiber.StatusBadRequest, BAD_REQUEST)
+	// parse the params
+	var req types.GetUserRequest
+	if err := c.ParamsParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request")
 	}
 
-	user, err := server.store.GetUser(c.Context(), username)
+	// validate the request
+	if err := util.CheckValidationErrors(req); err != nil {
+		return err
+	}
+
+	user, err := server.store.GetUser(c.Context(), req.Username)
 	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, FAILED_TO_GET_USER)
+		if err == sql.ErrNoRows {
+			return fiber.NewError(fiber.StatusNotFound, "user not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(&fiber.Map{
