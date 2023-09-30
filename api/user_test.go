@@ -192,7 +192,7 @@ func TestCreateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
@@ -281,8 +281,7 @@ func TestCreateUserAPI(t *testing.T) {
 // 		ctrl.Finish()
 
 // 		store := mockdb.NewMockStore(ctrl)
-// 		server := NewServer(store)
-// 		tc.buildStubs(store)
+// 		s:= newTestServertT,store)
 
 // 		// get username parameter from body
 // 		username := tc.body.(string)

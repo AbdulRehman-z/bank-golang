@@ -2,18 +2,22 @@ package api
 
 import (
 	"errors"
+	"fmt"
 
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
+	"github.com/AbdulRehman-z/bank-golang/token"
+	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/gofiber/fiber/v2"
 )
 
 type Server struct {
-	store  db.Store
-	router *fiber.App
-	// httpEngine http.ServeMux // NOTE: ONLY FOR TESTING
+	config     util.Config
+	store      db.Store
+	router     *fiber.App
+	tokenMaker token.Maker
 }
 
-func NewServer(store db.Store) *Server {
+func NewServer(config util.Config, store db.Store) (*Server, error) {
 
 	app := fiber.New(fiber.Config{
 		// Global custom error handler
@@ -34,8 +38,6 @@ func NewServer(store db.Store) *Server {
 				"success": false,
 				"message": message,
 			})
-
-			// Return from handler
 		},
 	})
 
@@ -50,11 +52,28 @@ func NewServer(store db.Store) *Server {
 		return c.Next()
 	})
 
+	tokenMaker, err := token.NewPasetoMaker(config.SYMMETRIC_KEY)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create token: %w", err)
+	}
 	server := &Server{
-		store:  store,
-		router: app,
+		store:      store,
+		router:     app,
+		tokenMaker: tokenMaker,
+		config:     config,
 	}
 
+	server.setupRoutes(app)
+
+	return server, nil
+
+}
+
+func (server *Server) Start(listenAddr string) error {
+	return server.router.Listen(listenAddr)
+}
+
+func (server *Server) setupRoutes(app *fiber.App) {
 	app.Post("/accounts", server.createAccountHandler)
 	app.Get("/accounts/:id", server.getAccountHandler)
 	app.Get("/accounts", server.listAccountsHandler)
@@ -65,11 +84,4 @@ func NewServer(store db.Store) *Server {
 
 	app.Post("/users", server.createUserHandler)
 	app.Get("/users/:username", server.getUserHandler)
-
-	return server
-
-}
-
-func (server *Server) Start(listenAddr string) error {
-	return server.router.Listen(listenAddr)
 }
