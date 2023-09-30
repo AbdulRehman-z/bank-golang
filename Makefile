@@ -30,7 +30,7 @@ rmtestcache:
 	go clean -testcache
 
 truncate:
-	docker exec -it $(CONTAINER_NAME) psql --username=postgres --dbname=$(DB_NAME) --command "TRUNCATE TABLE entries, exchange_rates, transfers, accounts CASCADE;"
+	docker exec -it $(CONTAINER_NAME) psql --username=postgres --dbname=$(DB_NAME) --command "TRUNCATE TABLE entries, users, exchange_rates, transfers, accounts CASCADE;"
 
 mock:
 	mockgen -destination db/mock/store.go -package mockdb github.com/AbdulRehman-z/bank-golang/db/sqlc Store	
