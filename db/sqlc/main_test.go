@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/joho/godotenv"
+	"github.com/AbdulRehman-z/bank-golang/util"
 	_ "github.com/lib/pq"
 )
 
@@ -15,19 +15,13 @@ var testDb *sql.DB
 
 func TestMain(m *testing.M) {
 	// Load env variables
-	godotenv.Load("../../.env")
-	dbDriver, exists := os.LookupEnv("DB_DRIVER")
-	if !exists {
-		dbDriver = "postgres"
-	}
-	dbSource, exists := os.LookupEnv("DB_URL")
-	if !exists {
-		dbSource = "postgres://postgres:password@localhost:5432/bankDb?sslmode=disable"
+	config, err := util.LoadConfig("../..")
+	if err != nil {
+		log.Fatal("Cannot load config:", err)
 	}
 
 	// Open a database connection
-	var err error
-	testDb, err = sql.Open(dbDriver, dbSource)
+	testDb, err = sql.Open(config.DB_DRIVER, config.DB_URL)
 	if err != nil {
 		log.Fatal("Cannot connect to db:", err)
 	}
