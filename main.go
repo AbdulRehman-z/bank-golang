@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/AbdulRehman-z/bank-golang/api"
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/util"
-	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
 )
@@ -23,22 +21,19 @@ func main() {
 	flag.Parse()
 
 	// Load env variables
-	godotenv.Load(".env")
-	dbDriver, exists := os.LookupEnv("DB_DRIVER")
-	if !exists {
-		log.Fatal("DB_DRIVER environment variable not set")
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal("failed to load env: ", err)
 	}
-	dbSource, exists := os.LookupEnv("DB_URL")
-	if !exists {
-		log.Fatal("DB_URL environment variable not set")
-	}
-
-	conn, err := sql.Open(dbDriver, dbSource)
+	conn, err := sql.Open(config.DB_DRIVER, config.DB_URL)
 	if err != nil {
 		log.Fatal("failed to connect: ", err)
 	}
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server, err := api.NewServer(*config, store)
+	if err != nil {
+		log.Fatal("failed to create server: ", err)
+	}
 	// fmt.Println("Starting server on")
 	log.Fatal(server.Start(*listenAddr))
 
