@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
+	"github.com/AbdulRehman-z/bank-golang/token"
 	"github.com/AbdulRehman-z/bank-golang/types"
 	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/gofiber/fiber/v2"
@@ -38,18 +39,33 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
 	}
 
+	// fmt.Print("=============================")
+	// // fmt.Println("err: ", err)
+	// fmt.Print("=============================")
+
 	// validate the request
 	if err := util.CheckValidationErrors(req); err != nil {
+		fmt.Print("=============================")
 		fmt.Println("err: ", err)
+		fmt.Print("=============================")
 		return err
 	}
 
+	payload := c.Locals(authorizationPayloadKey).(*token.Payload)
+	// fmt.Println("payload: ", payload.Username)
+	// fmt.Print("=============================")
+	// fmt.Println("payload: ", payload)
+	// fmt.Print("=============================")
 	// create a new account
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    payload.Username,
 		Balance:  "0",
 		Currency: req.Currency,
 	}
+
+	// fmt.Print("=============================")
+	// fmt.Println("Arg: ", arg)
+	// fmt.Print("=============================")
 
 	// save the account in the database
 	account, err := server.store.CreateAccount(c.Context(), arg)
@@ -71,6 +87,7 @@ func (server *Server) createAccountHandler(c *fiber.Ctx) error {
 
 // getAccountHandler gets an account by id
 func (server *Server) getAccountHandler(c *fiber.Ctx) error {
+	fmt.Print("=======================")
 
 	req := new(types.GetAccountRequest)
 	// get the uri param
@@ -83,12 +100,20 @@ func (server *Server) getAccountHandler(c *fiber.Ctx) error {
 	}
 	// get the account from the database
 	account, err := server.store.GetAccount(c.Context(), req.ID)
+	fmt.Printf("err: %v", err)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fiber.NewError(fiber.StatusNotFound, ACCOUNT_NOT_FOUND)
 		} else {
 			return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 		}
+	}
+
+	fmt.Println("=======================")
+
+	payload := c.Locals(authorizationPayloadKey).(*token.Payload)
+	if account.Owner != payload.Username {
+		return fiber.NewError(fiber.StatusUnauthorized, "unauthorized")
 	}
 
 	return c.JSON(&fiber.Map{
@@ -116,12 +141,14 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 		return err
 	}
 
+	payload := c.Locals(authorizationPayloadKey).(*token.Payload)
+
 	// List all accounts from the database
 	accounts, err := server.store.ListAccounts(c.Context(), db.ListAccountsParams{
+		Owner:  payload.Username,
 		Limit:  int32(query.PageSize),
 		Offset: (int32(query.PageID) - 1) * int32(query.PageSize),
 	})
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fiber.NewError(fiber.StatusNotFound, ACCOUNT_NOT_FOUND)
@@ -136,9 +163,12 @@ func (server *Server) listAccountsHandler(c *fiber.Ctx) error {
 	})
 }
 
+// TODOS:
+// 1. Add authorization
+// 2. Add validation
+// 3. Add a check for currency mismatch i.e update the account for a specific currency only
 // updateAccountHandler updates an account
 func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
-
 	var req types.UpdateAccountRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, FAILED_TO_PARSE_BODY)
@@ -149,14 +179,12 @@ func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 		return err
 	}
 
-	// update the account in the database
-	// convert req.Balance to string
+	// payload := c.Locals(authorizationPayloadKey).(*token.Payload)
 
 	account, err := server.store.UpdateAccount(c.Context(), db.UpdateAccountParams{
 		ID:      req.ID,
 		Balance: strconv.FormatInt(req.Balance, 10),
 	})
-
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
@@ -166,9 +194,12 @@ func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 		"message": "Account updated successfully",
 		"data":    account,
 	})
-
 }
 
+// TODOS:
+// 1. Add authorization
+// 2. Add validation
+// 3. Delete account with a specific currency only
 // deleteAccountHandler deletes an account
 func (server *Server) deleteAccountHandler(c *fiber.Ctx) error {
 
@@ -193,5 +224,4 @@ func (server *Server) deleteAccountHandler(c *fiber.Ctx) error {
 		"success": true,
 		"message": "Account deleted successfully",
 	})
-
 }
