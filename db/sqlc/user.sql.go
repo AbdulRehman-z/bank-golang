@@ -20,14 +20,14 @@ VALUES ($1, $2, $3, $4)
 RETURNING username, hashed_password, full_name, email, password_changed_at, created_at
 `
 
-type CreateUserRequest struct {
+type CreateUserParams struct {
 	Username       string `json:"username"`
 	HashedPassword string `json:"hashed_password"`
 	FullName       string `json:"full_name"`
 	Email          string `json:"email"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserRequest) (User, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Username,
 		arg.HashedPassword,

@@ -13,7 +13,7 @@ func CreateRandomUser(t *testing.T) User {
 
 	hashedPassword, err := util.HashPassword(util.GenerateRandomString(8))
 	require.NoError(t, err)
-	arg := CreateUserRequest{
+	arg := CreateUserParams{
 		Username:       util.GenerateRandomOwnerName(),
 		HashedPassword: hashedPassword,
 		FullName:       util.GenerateRandomOwnerName(),
