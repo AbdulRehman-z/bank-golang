@@ -25,14 +25,12 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 			// Status code defaults to 500 And Error message defaults to "Internal Server Error"
 			code := fiber.StatusInternalServerError
 			message := "Internal Server Error"
-
 			// Retrieve the custom status code and message if it's an fiber.*Error
 			var e *fiber.Error
 			if errors.As(err, &e) {
 				message = e.Message
 				code = e.Code
 			}
-
 			// send the error as json
 			return ctx.Status(code).JSON(fiber.Map{
 				"success": false,
@@ -48,7 +46,6 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 				return fiber.NewError(fiber.StatusUnsupportedMediaType, "Content-Type must be application/json")
 			}
 		}
-
 		return c.Next()
 	})
 
@@ -69,19 +66,21 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 
 }
 
-func (server *Server) Start(listenAddr string) error {
-	return server.router.Listen(listenAddr)
+func (server *Server) Start(listenAddr *string) error {
+	return server.router.Listen(*listenAddr)
 }
 
 func (server *Server) setupRoutes(app *fiber.App) {
-	app.Post("/accounts", server.createAccountHandler)
-	app.Get("/accounts/:id", server.getAccountHandler)
-	app.Get("/accounts", server.listAccountsHandler)
-	app.Put("/accounts", server.updateAccountHandler)
-	app.Delete("/accounts/:id", server.deleteAccountHandler)
 
-	app.Post("/transfers", server.createTransferHandler)
+	auth := app.Group("/v1", AuthMiddleware(server.tokenMaker))
+
+	auth.Post("/accounts", server.createAccountHandler)
+	auth.Get("/accounts/:id", server.getAccountHandler)
+	auth.Get("/accounts", server.listAccountsHandler)
+	auth.Put("/accounts", server.updateAccountHandler)
+	auth.Delete("/accounts/:id", server.deleteAccountHandler)
+	auth.Post("/transfers", server.createTransferHandler)
 
 	app.Post("/users", server.createUserHandler)
-	app.Get("/users/:username", server.getUserHandler)
+	app.Post("/users/login", server.loginUserHandler)
 }
