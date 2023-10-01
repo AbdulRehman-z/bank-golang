@@ -11,13 +11,24 @@ type (
 	}
 
 	CreateUserResponse struct {
-		Username  string    `json:"username"`
-		FullName  string    `json:"full_name"`
-		Email     string    `json:"email"`
-		CreatedAt time.Time `json:"created_at"`
+		Username          string    `json:"username"`
+		FullName          string    `json:"full_name"`
+		Email             string    `json:"email"`
+		PasswordChangedAt time.Time `json:"password_changed_at"`
+		CreatedAt         time.Time `json:"created_at"`
 	}
 
 	GetUserRequest struct {
 		Username string `json:"username" validate:"required,min=3,max=32"`
+	}
+
+	LoginUserRequest struct {
+		Username string `json:"username" validate:"required,min=3,max=32"`
+		Password string `json:"password" validate:"required,min=8"`
+	}
+
+	LoginUserResponse struct {
+		AccessToken string `json:"access_token"`
+		User        CreateUserResponse
 	}
 )
