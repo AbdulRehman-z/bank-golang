@@ -21,12 +21,12 @@ import (
 )
 
 type EqCreateUserParamsMatcher struct {
-	arg      db.CreateUserRequest
+	arg      db.CreateUserParams
 	password string
 }
 
 func (e EqCreateUserParamsMatcher) Matches(x interface{}) bool {
-	arg, ok := x.(db.CreateUserRequest)
+	arg, ok := x.(db.CreateUserParams)
 	if !ok {
 		return false
 	}
@@ -44,7 +44,7 @@ func (e EqCreateUserParamsMatcher) String() string {
 	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.password)
 }
 
-func EqCreateUserParams(arg db.CreateUserRequest, password string) gomock.Matcher {
+func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
 	return EqCreateUserParamsMatcher{arg, password}
 }
 
@@ -66,7 +66,7 @@ func TestCreateUserAPI(t *testing.T) {
 				Email:    user.Email,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.CreateUserRequest{
+				arg := db.CreateUserParams{
 					Username: user.Username,
 					FullName: user.FullName,
 					Email:    user.Email,
@@ -192,7 +192,7 @@ func TestCreateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store)
+			server := NewTestServer(t, store)
 
 			// Marshal body data to JSON
 			data, err := json.Marshal(tc.body)
@@ -281,7 +281,7 @@ func TestCreateUserAPI(t *testing.T) {
 // 		ctrl.Finish()
 
 // 		store := mockdb.NewMockStore(ctrl)
-// 		s:= newTestServertT,store)
+// 		s:= NewTestServertT,store)
 
 // 		// get username parameter from body
 // 		username := tc.body.(string)
