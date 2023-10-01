@@ -3,8 +3,7 @@ package types
 type (
 	// CreateAccountRequest defines the request body for creating an account
 	CreateAccountRequest struct {
-		Owner    string `json:"owner" validate:"required,min=3,max=20"` // Required field, min 3 char long max 20
-		Currency string `json:"currency" validate:"required"`           // Required field, one of USD, EUR, CAD
+		Currency string `json:"currency" validate:"required,min=3,max=3"` // Required field, one of USD, EUR, CAD
 	}
 
 	// GetAccountRequest defines the request body for getting an account
@@ -15,8 +14,9 @@ type (
 
 	// ListAccountsRequest defines the request params for listing accounts
 	ListAccountsRequest struct {
-		PageID   int32 `query:"page_id" validate:"required,gte=1"`   // Required field, min 1
-		PageSize int32 `query:"page_size" validate:"required,lte=5"` // Required field, min 5
+		Owner    string `query:"owner" validate:"omitempty,min=3,max=20"` // Optional field, min 3 char long max 20
+		PageID   int32  `query:"page_id" validate:"required,gte=1"`       // Required field, min 1
+		PageSize int32  `query:"page_size" validate:"required,lte=5"`     // Required field, min 5
 	}
 
 	// UpdateAccountRequest defines the request body for updating an account
