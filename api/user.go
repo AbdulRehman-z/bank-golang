@@ -25,7 +25,7 @@ func (server *Server) createUserHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
-	arg := db.CreateUserRequest{
+	arg := db.CreateUserParams{
 		Username:       req.Username,
 		HashedPassword: hashedPassword,
 		FullName:       req.FullName,
@@ -44,10 +44,11 @@ func (server *Server) createUserHandler(c *fiber.Ctx) error {
 	}
 
 	response := types.CreateUserResponse{
-		Username:  user.Username,
-		FullName:  user.FullName,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
+		Username:          user.Username,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		PasswordChangedAt: user.PasswordChangedAt,
+		CreatedAt:         user.CreatedAt,
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(&fiber.Map{
@@ -57,15 +58,12 @@ func (server *Server) createUserHandler(c *fiber.Ctx) error {
 	})
 }
 
-func (server *Server) getUserHandler(c *fiber.Ctx) error {
-
-	// parse the params
-	var req types.GetUserRequest
-	if err := c.ParamsParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request")
+func (server *Server) loginUserHandler(c *fiber.Ctx) error {
+	var req types.LoginUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	// validate the request
 	if err := util.CheckValidationErrors(req); err != nil {
 		return err
 	}
@@ -78,9 +76,30 @@ func (server *Server) getUserHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
+	err = util.CheckPassword(req.Password, user.HashedPassword)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
+	}
+
+	accessToken, err := server.tokenMaker.CreateToken(user.Username, server.config.ACCESS_TOKEN_DURATION)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+	}
+
+	response := types.LoginUserResponse{
+		AccessToken: accessToken,
+		User: types.CreateUserResponse{
+			Username:          user.Username,
+			FullName:          user.FullName,
+			Email:             user.Email,
+			PasswordChangedAt: user.PasswordChangedAt,
+			CreatedAt:         user.CreatedAt,
+		},
+	}
+
 	return c.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"status":  "success",
-		"message": "user found",
-		"data":    user,
+		"message": "user logged in",
+		"data":    response,
 	})
 }
