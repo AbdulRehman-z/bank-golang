@@ -179,7 +179,20 @@ func (server *Server) updateAccountHandler(c *fiber.Ctx) error {
 		return err
 	}
 
-	// payload := c.Locals(authorizationPayloadKey).(*token.Payload)
+	// accountExists, err := server.accountExist(c, req.ID,)
+
+	accountExists, err := server.store.GetAccount(c.Context(), req.ID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, FAILED_TO_GET_ACCOUNT)
+	}
+
+	payload := c.Locals(authorizationPayloadKey).(*token.Payload)
+	fmt.Println("payload: ", payload.Username)
+	fmt.Printf("accountExists: %v\n", accountExists.Owner)
+
+	if accountExists.Owner != payload.Username {
+		return fiber.NewError(fiber.StatusUnauthorized, "unauthorized")
+	}
 
 	account, err := server.store.UpdateAccount(c.Context(), db.UpdateAccountParams{
 		ID:      req.ID,
@@ -214,8 +227,24 @@ func (server *Server) deleteAccountHandler(c *fiber.Ctx) error {
 		return err
 	}
 
+	accountExists, err := server.store.GetAccount(c.Context(), req.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fiber.NewError(fiber.StatusNotFound, ACCOUNT_NOT_FOUND)
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, FAILED_TO_GET_ACCOUNT)
+	}
+
+	payload := c.Locals(authorizationPayloadKey).(*token.Payload)
+	if accountExists.Owner != payload.Username {
+		return fiber.NewError(fiber.StatusUnauthorized, "unauthorized")
+	}
+
+	fmt.Printf("accountExists: %v\n", accountExists.Owner)
+	fmt.Printf("payload: %v\n", payload.Username)
+
 	// delete the account from the database
-	err := server.store.DeleteAccount(c.Context(), req.ID)
+	err = server.store.DeleteAccount(c.Context(), req.ID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, FAILED_TO_DELETE_ACCOUNT)
 	}
