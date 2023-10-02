@@ -61,7 +61,6 @@ func (server *Server) createTransferHandler(c *fiber.Ctx) error {
 
 	_, err = server.accountExist(c, req.ToAccountID, req.Currency)
 	if err != nil {
-		fmt.Println("err: ", err)
 		return err
 	}
 
@@ -88,24 +87,13 @@ func (server *Server) createTransferHandler(c *fiber.Ctx) error {
 // a little helper function that checks whether the account that are being involved in transaction exists or not
 func (server *Server) accountExist(c *fiber.Ctx, accountId int64, currency string) (*db.Account, error) {
 	account, err := server.store.GetAccount(c.Context(), accountId)
-	fmt.Println("======================== No rows")
-	fmt.Printf("Account: %v\n", account)
-	fmt.Println("======================== No Rows")
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			fmt.Println("======================== No rows")
-			fmt.Printf("err: %s\n", err)
-			fmt.Println("======================== No Rows")
 			return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("account with id %d not found", accountId))
 		}
-
 		return nil, fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to get account: %v", err))
 	}
-
-	fmt.Println("======================== No rows")
-	fmt.Printf("%s vs %s : \n", account.Currency, currency)
-	fmt.Println("======================== No Rows")
 
 	if account.Currency != currency {
 		return nil, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("account currency mismatch: %s vs %s", account.Currency, currency))

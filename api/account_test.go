@@ -535,8 +535,6 @@ func TestUpdateAccountAPI(t *testing.T) {
 			request.Header.Set("Content-Type", "application/json")
 			tc.setupAuth(t, request, server.tokenMaker)
 			response, err := server.router.Test(request)
-			fmt.Printf("response: %v\n", response)
-			fmt.Printf("err: %v\n", err)
 			require.NoError(t, err)
 
 			tc.checkResp(t, response)
