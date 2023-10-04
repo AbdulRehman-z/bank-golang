@@ -1,0 +1,22 @@
+version: "3"
+services:
+  postgres:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bankDb
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      DB_DRIVER: "postgres"
+      DB_URL: "postgres://postgres:password@postgres:5432/bankDb?sslmode=disable"
+    depends_on:
+      - postgres
+    entrypoint: ["./app/wait-for.sh", "postgres:5432", "--", "/app/start.sh"]
+    command: ["/app/main"]
