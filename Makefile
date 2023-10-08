@@ -9,10 +9,10 @@ postgres:
 	docker run --name $(CONTAINER_NAME) --network bank-network -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -d postgres:14-alpine
 
 createdb:
-	docker exec -it $(CONTAINER_NAME) createdb --postgresnpasswordot --owner=root $(DB_NAME)
+	docker exec -it $(CONTAINER_NAME) createdb --username=postgres --owner=postgres $(DB_NAME)
 
 dropdb:
-	dockepostgresepasswordpostgres dropdb $(DB_NAME)
+	docker exec -it $(CONTAINER_NAME) dropdb $(DB_NAME)
 
 migrate-up:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
