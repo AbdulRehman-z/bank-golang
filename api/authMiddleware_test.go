@@ -21,7 +21,8 @@ func TestAuthMiddleware(t *testing.T) {
 		{
 			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				accessToken, err := tokenMaker.CreateToken("test", time.Minute)
+				accessToken, payload, err := tokenMaker.CreateToken("test", time.Minute)
+				require.NotEmpty(t, payload)
 				require.NoError(t, err)
 				request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 			},
@@ -41,7 +42,8 @@ func TestAuthMiddleware(t *testing.T) {
 		{
 			name: "InvalidAuthorizationHeader",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				accessToken, err := tokenMaker.CreateToken("test", time.Minute)
+				accessToken, payload, err := tokenMaker.CreateToken("test", time.Minute)
+				require.NotEmpty(t, payload)
 				require.NoError(t, err)
 				request.Header.Set("Authorization", fmt.Sprintf(accessToken))
 			},
@@ -52,7 +54,8 @@ func TestAuthMiddleware(t *testing.T) {
 		{
 			name: "InvalidAuthorizationType",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				accessToken, err := tokenMaker.CreateToken("test", time.Minute)
+				accessToken, payload, err := tokenMaker.CreateToken("test", time.Minute)
+				require.NotEmpty(t, payload)
 				require.NoError(t, err)
 				request.Header.Set("Authorization", fmt.Sprintf("test %s", accessToken))
 			},
@@ -63,7 +66,8 @@ func TestAuthMiddleware(t *testing.T) {
 		{
 			name: "ExpiredToken",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				accessToken, err := tokenMaker.CreateToken("test", -time.Minute)
+				accessToken, payload, err := tokenMaker.CreateToken("test", -time.Minute)
+				require.NotEmpty(t, payload)
 				require.NoError(t, err)
 				request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 			},

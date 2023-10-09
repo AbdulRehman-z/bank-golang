@@ -292,9 +292,10 @@ func TestTransferAPI(t *testing.T) {
 
 func addAuthorization(t *testing.T, request *http.Request, tokenMaker token.Maker, authorizationType string,
 	username string, duration time.Duration) {
-	accessToken, err := tokenMaker.CreateToken(username, duration)
+	accessToken, payload, err := tokenMaker.CreateToken(username, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, accessToken)
+	require.NotEmpty(t, payload)
 
 	tokenString := authorizationType + " " + accessToken
 	request.Header.Set(authorizationHeaderKey, tokenString)
