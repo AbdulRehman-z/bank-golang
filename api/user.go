@@ -81,13 +81,34 @@ func (server *Server) loginUserHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(user.Username, server.config.ACCESS_TOKEN_DURATION)
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.ACCESS_TOKEN_DURATION)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+	}
+
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.REFRESH_TOKEN_DURATION)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
+	}
+
+	session, err := server.store.CreateSession(c.Context(), db.CreateSessionParams{
+		ID:           refreshPayload.Id,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		ClientIp:     c.IP(),
+		UserAgent:    string(c.Request().Header.UserAgent()),
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, INTERNAL_SERVER_ERROR)
 	}
 
 	response := types.LoginUserResponse{
-		AccessToken: accessToken,
+		SessionId:             session.ID,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
 		User: types.CreateUserResponse{
 			Username:          user.Username,
 			FullName:          user.FullName,
