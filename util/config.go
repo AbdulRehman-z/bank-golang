@@ -13,6 +13,7 @@ type Config struct {
 	LISTEN_ADDR            string        `mapstructure:"LISTEN_ADDR"`
 	ACCESS_TOKEN_DURATION  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	REFRESH_TOKEN_DURATION time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	GRPC_ADDR              string        `mapstructure:"GRPC_ADDR"`
 }
 
 func LoadConfig(path string) (*Config, error) {
