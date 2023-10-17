@@ -4,7 +4,19 @@ package pb;
 import "rpc_create_user.proto";
 import "rpc_login_user.proto";
 import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "github.com/AbdulRehman-z/bank-golang/pb";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "bank";
+    version: "1.1";
+    contact: {
+      name: "Abdul Rehman";
+      url: "https://github.com/AbdulRehman-z";
+      email: "yousafbhaikhan10@gmail.com";
+    };
+  };
+};
 
 service BankService {
     rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
@@ -12,11 +24,19 @@ service BankService {
                 post: "/v1/create_user"
                  body: "*"
                 };
-    }
+                option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+                  description: "Create User";
+                  summary: "Use this api endpoint to create/register user";
+                  };
+    };
     rpc LoginUser (LoginUserRequest) returns (LoginUserResponse) {
         option (google.api.http) = {
             post: "/v1/login_user"
             body: "*"
         };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+          description: "Login User";
+          summary: "Use this api endpoint to login user";
+          };
     }
 }
