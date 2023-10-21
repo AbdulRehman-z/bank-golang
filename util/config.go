@@ -12,6 +12,7 @@ type Config struct {
 	SYMMETRIC_KEY          string        `mapstructure:"SYMMETRIC_KEY"`
 	LISTEN_ADDR            string        `mapstructure:"LISTEN_ADDR"`
 	ACCESS_TOKEN_DURATION  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	DB_MIGRATION_URL       string        `mapstructure:"DB_MIGRATION_URL"`
 	REFRESH_TOKEN_DURATION time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	GRPC_ADDR              string        `mapstructure:"GRPC_ADDR"`
 	GRPC_GATEWAY_ADDR      string        `mapstructure:"GRPC_GATEWAY_ADDR"`
