@@ -13,6 +13,9 @@ import (
 	"github.com/AbdulRehman-z/bank-golang/gapi"
 	"github.com/AbdulRehman-z/bank-golang/pb"
 	"github.com/AbdulRehman-z/bank-golang/util"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rakyll/statik/fs"
 	"google.golang.org/grpc"
@@ -35,10 +38,23 @@ func main() {
 		log.Fatal("failed to connect: ", err)
 	}
 	store := db.NewStore(conn)
+	runDbMigration(config.DB_MIGRATION_URL, config.DB_URL)
 
 	// runFiberServer(config, store)
 	go runGatewayServer(config, store)
 	runGrpcServer(config, store)
+}
+
+func runDbMigration(sourceURL string, dbURL string) {
+
+	m, err := migrate.New(sourceURL, dbURL)
+	if err != nil {
+		log.Fatal("failed to create migration: ", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal("failed to apply up migration: ", err)
+	}
 }
 
 func runFiberServer(config *util.Config, store db.Store) {
