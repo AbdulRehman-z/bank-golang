@@ -16,6 +16,7 @@ type Config struct {
 	REFRESH_TOKEN_DURATION time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	GRPC_ADDR              string        `mapstructure:"GRPC_ADDR"`
 	GRPC_GATEWAY_ADDR      string        `mapstructure:"GRPC_GATEWAY_ADDR"`
+	ENVIRONMENT            string        `mapstructure:"ENVIRONMENT"`
 }
 
 func LoadConfig(path string) (*Config, error) {
