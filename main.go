@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"log"
+
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/AbdulRehman-z/bank-golang/api"
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
@@ -14,6 +14,9 @@ import (
 	"github.com/AbdulRehman-z/bank-golang/pb"
 	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -31,11 +34,17 @@ func main() {
 	// Load env variables
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		log.Fatal("failed to load env: ", err)
+		log.Fatal().Err(err).Msg("cannot load config")
 	}
+
+	if config.ENVIRONMENT == "development" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	}
+
 	conn, err := sql.Open(config.DB_DRIVER, config.DB_URL)
 	if err != nil {
-		log.Fatal("failed to connect: ", err)
+		log.Fatal().Err(err).Msg("cannot connect to db")
 	}
 	store := db.NewStore(conn)
 	runDbMigration(config.DB_MIGRATION_URL, config.DB_URL)
@@ -49,51 +58,56 @@ func runDbMigration(sourceURL string, dbURL string) {
 
 	m, err := migrate.New(sourceURL, dbURL)
 	if err != nil {
-		log.Fatal("failed to create migration: ", err)
+		log.Fatal().Err(err).Msg("failed to create migration")
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal("failed to apply up migration: ", err)
+		log.Fatal().Err(err).Msg("failed to migrate db")
 	}
 }
 
 func runFiberServer(config *util.Config, store db.Store) {
 	server, err := api.NewServer(*config, store)
-	fmt.Println("Starting http server...")
+	log.Info().Msg("Starting fiber server on " + config.LISTEN_ADDR)
 	if err != nil {
-		log.Fatal("failed to create http server: ", err)
+		log.Fatal().Err(err).Msg("failed to create fiber server")
 	}
 
-	log.Fatal(server.Start(&config.LISTEN_ADDR))
+	err = server.Start(&config.LISTEN_ADDR)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start server")
+	}
 }
 
 func runGrpcServer(config *util.Config, store db.Store) {
 	server, err := gapi.NewServer(*config, store)
 	if err != nil {
-		log.Fatal("failed to create server: ", err)
+		log.Fatal().Err(err).Msg("failed to create gRPC server")
 	}
 
 	listener, err := net.Listen("tcp", config.GRPC_ADDR)
 	if err != nil {
-		log.Fatal("failed to listen: ", err)
+		log.Fatal().Err(err).Msg("failed to listen")
 	}
 
 	// initialize grpc server
-	grpcServer := grpc.NewServer()
+
+	grpcLogger := grpc.UnaryInterceptor(gapi.Logger)
+	grpcServer := grpc.NewServer(grpcLogger)
 	pb.RegisterBankServiceServer(grpcServer, server)
 	reflection.Register(grpcServer)
 
-	fmt.Printf("Starting grpc server on %s...\n", config.GRPC_ADDR)
+	log.Info().Msg("Starting grpc server on " + config.GRPC_ADDR)
 	err = grpcServer.Serve(listener)
 	if err != nil {
-		log.Fatal("failed to create grpc server: ", err)
+		log.Fatal().Err(err).Msg("failed to serve")
 	}
 }
 
 func runGatewayServer(config *util.Config, store db.Store) {
 	server, err := gapi.NewServer(*config, store)
 	if err != nil {
-		log.Fatal("failed to create server: ", err)
+		log.Fatal().Err(err).Msg("failed to create gRPC server")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -111,7 +125,7 @@ func runGatewayServer(config *util.Config, store db.Store) {
 	grpcMux := runtime.NewServeMux(jsonOptions)
 	err = pb.RegisterBankServiceHandlerServer(ctx, grpcMux, server)
 	if err != nil {
-		log.Fatal("failed to listen: ", err)
+		log.Fatal().Err(err).Msg("failed to register gateway server")
 	}
 
 	mux := http.NewServeMux()
@@ -119,18 +133,18 @@ func runGatewayServer(config *util.Config, store db.Store) {
 
 	statikFS, err := fs.New()
 	if err != nil {
-		log.Fatal("failed to create statik file system: ", err)
+		log.Fatal().Err(err).Msg("failed to create statik file system")
 	}
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(statikFS)))
 
 	listener, err := net.Listen("tcp", config.GRPC_GATEWAY_ADDR)
 	if err != nil {
-		log.Fatal("failed to listen: ", err)
+		log.Fatal().Err(err).Msg("failed to listen")
 	}
 
-	fmt.Printf("Starting grpc gateway server on %s...\n", config.GRPC_GATEWAY_ADDR)
+	log.Info().Msg("Starting grpc gateway server on " + config.GRPC_GATEWAY_ADDR)
 	err = http.Serve(listener, mux)
 	if err != nil {
-		log.Fatal("failed to create http gateway server: ", err)
+		log.Fatal().Err(err).Msg("failed to serve")
 	}
 }
