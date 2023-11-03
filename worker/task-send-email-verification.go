@@ -45,7 +45,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendEmailVerify(ctx context.Cont
 	}
 
 	log.Info().Str("type", task.Type()).Str("username", payload.Username).
-		Str("email", user.Email).Msg("processing task")
+		Str("email", user.Email).Msg("processed task")
 
 	return nil
 }
