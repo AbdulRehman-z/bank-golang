@@ -7,17 +7,19 @@ import (
 	"github.com/AbdulRehman-z/bank-golang/pb"
 	"github.com/AbdulRehman-z/bank-golang/token"
 	"github.com/AbdulRehman-z/bank-golang/util"
+	"github.com/AbdulRehman-z/bank-golang/worker"
 )
 
 // Server serves gRPC requests
 type Server struct {
 	pb.UnimplementedBankServiceServer
-	tokenMaker token.Maker
-	config     util.Config
-	store      db.Store
+	tokenMaker      token.Maker
+	config          util.Config
+	store           db.Store
+	taskDistributor worker.TaskDistributor
 }
 
-func NewServer(config util.Config, store db.Store) (*Server, error) {
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) (*Server, error) {
 
 	token, err := token.NewPasetoMaker(config.SYMMETRIC_KEY)
 	if err != nil {
@@ -25,8 +27,9 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	}
 
 	return &Server{
-		tokenMaker: token,
-		config:     config,
-		store:      store,
+		tokenMaker:      token,
+		config:          config,
+		store:           store,
+		taskDistributor: taskDistributor,
 	}, nil
 }
