@@ -47,4 +47,7 @@ proto:
 test:
 	go test -v -cover ./...
 
+redis:
+	docker run --name redis -p 6379:6379 -d redis:7.2.2-alpine	
+
 .PHONY: migrate-down migrate-up	
