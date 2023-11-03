@@ -13,7 +13,9 @@ import (
 	"github.com/AbdulRehman-z/bank-golang/gapi"
 	"github.com/AbdulRehman-z/bank-golang/pb"
 	"github.com/AbdulRehman-z/bank-golang/util"
+	"github.com/AbdulRehman-z/bank-golang/worker"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -49,9 +51,23 @@ func main() {
 	store := db.NewStore(conn)
 	runDbMigration(config.DB_MIGRATION_URL, config.DB_URL)
 
-	// runFiberServer(config, store)
-	go runGatewayServer(config, store)
-	runGrpcServer(config, store)
+	redisClientOpts := asynq.RedisClientOpt{
+		Addr: config.REDIS_ADDR,
+	}
+	taskDistributor := worker.NewTaskDistributor(redisClientOpts)
+
+	go runRedisTaskProcessor(redisClientOpts, store)
+	go runGatewayServer(config, store, taskDistributor)
+	runGrpcServer(config, store, taskDistributor)
+}
+
+func runRedisTaskProcessor(opts asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(opts, store)
+	log.Info().Msg("Starting redis task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start redis task processor")
+	}
 }
 
 func runDbMigration(sourceURL string, dbURL string) {
@@ -79,8 +95,8 @@ func runFiberServer(config *util.Config, store db.Store) {
 	}
 }
 
-func runGrpcServer(config *util.Config, store db.Store) {
-	server, err := gapi.NewServer(*config, store)
+func runGrpcServer(config *util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(*config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create gRPC server")
 	}
@@ -104,8 +120,8 @@ func runGrpcServer(config *util.Config, store db.Store) {
 	}
 }
 
-func runGatewayServer(config *util.Config, store db.Store) {
-	server, err := gapi.NewServer(*config, store)
+func runGatewayServer(config *util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(*config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create gRPC server")
 	}
