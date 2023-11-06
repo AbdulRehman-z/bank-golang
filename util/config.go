@@ -18,6 +18,7 @@ type Config struct {
 	GRPC_GATEWAY_ADDR      string        `mapstructure:"GRPC_GATEWAY_ADDR"`
 	ENVIRONMENT            string        `mapstructure:"ENVIRONMENT"`
 	REDIS_ADDR             string        `mapstructure:"REDIS_ADDR"`
+	APP_PASSWORD           string        `mapstructure:"APP_PASSWORD"`
 }
 
 func LoadConfig(path string) (*Config, error) {
