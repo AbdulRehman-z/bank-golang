@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/AbdulRehman-z/bank-golang/mail"
+	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog/log"
 )
@@ -34,6 +36,11 @@ func (d *RedisTaskDistributor) TaskSendVerificationEmail(ctx context.Context, pa
 }
 
 func (processor *RedisTaskProcessor) ProcessTaskSendEmailVerify(ctx context.Context, task *asynq.Task) error {
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		return fmt.Errorf("cannot load config: %w", err)
+	}
+
 	var payload PayloadSendVerificationEmail
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
 		return fmt.Errorf("cannot unmarshal payload: %w", err)
@@ -43,6 +50,12 @@ func (processor *RedisTaskProcessor) ProcessTaskSendEmailVerify(ctx context.Cont
 	if err != nil {
 		return fmt.Errorf("cannot get user: %w", err)
 	}
+
+	// send email
+	senderEmail := "yousafbhaikhan10@gmail.com"
+	mailSender := mail.NewGmailSender(user.Username, senderEmail, config.APP_PASSWORD)
+	receiverEmail := []string{user.Email}
+	mailSender.SendEmail(receiverEmail, "Verify your email", "Please verify your email by clicking this link: http://localhost:8080/verify-email?token=123")
 
 	log.Info().Str("type", task.Type()).Str("username", payload.Username).
 		Str("email", user.Email).Msg("processed task")
