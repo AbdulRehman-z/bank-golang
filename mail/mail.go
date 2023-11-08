@@ -2,7 +2,6 @@ package mail
 
 import (
 	"bytes"
-	"fmt"
 	"net/smtp"
 	"strconv"
 )
@@ -43,8 +42,7 @@ func (m *MailService) SendEmail(to []string, subject string, body string) error 
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
 	var bodyMessage bytes.Buffer
-	headers := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	bodyMessage.Write([]byte(fmt.Sprintf("Subject: %s \n%s\n\n", subject, headers)))
+	bodyMessage.Write([]byte("Subject: " + subject + "\n" + body))
 
 	// Sending email.
 	err := smtp.SendMail(smtpHost+":"+strconv.Itoa(smtpPort), // Convert Int to String
