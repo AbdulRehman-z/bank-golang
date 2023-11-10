@@ -11,6 +11,7 @@ import (
 	"github.com/AbdulRehman-z/bank-golang/api"
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/gapi"
+	"github.com/AbdulRehman-z/bank-golang/mail"
 	"github.com/AbdulRehman-z/bank-golang/pb"
 	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/AbdulRehman-z/bank-golang/worker"
@@ -41,7 +42,6 @@ func main() {
 
 	if config.ENVIRONMENT == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
 	}
 
 	conn, err := sql.Open(config.DB_DRIVER, config.DB_URL)
@@ -56,13 +56,15 @@ func main() {
 	}
 	taskDistributor := worker.NewTaskDistributor(redisClientOpts)
 
-	go runRedisTaskProcessor(redisClientOpts, store)
+	mailer := mail.NewGmailSender("Abdul Rehman", config.FROM_EMAIL_ADDRESS, config.APP_PASSWORD)
+
+	go runRedisTaskProcessor(redisClientOpts, store, mailer)
 	go runGatewayServer(config, store, taskDistributor)
 	runGrpcServer(config, store, taskDistributor)
 }
 
-func runRedisTaskProcessor(opts asynq.RedisClientOpt, store db.Store) {
-	taskProcessor := worker.NewRedisTaskProcessor(opts, store)
+func runRedisTaskProcessor(opts asynq.RedisClientOpt, store db.Store, mailer mail.Mail) {
+	taskProcessor := worker.NewRedisTaskProcessor(opts, store, mailer)
 	log.Info().Msg("Starting redis task processor")
 	err := taskProcessor.Start()
 	if err != nil {
