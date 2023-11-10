@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/mail"
 	"github.com/AbdulRehman-z/bank-golang/util"
 	"github.com/hibiken/asynq"
@@ -51,11 +52,20 @@ func (processor *RedisTaskProcessor) ProcessTaskSendEmailVerify(ctx context.Cont
 		return fmt.Errorf("cannot get user: %w", err)
 	}
 
+	verifyEmail, err := processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
+		Username:   user.Username,
+		Email:      user.Email,
+		SecretCode: util.GenerateRandomString(10),
+	})
+	if err != nil {
+		return fmt.Errorf("cannot get user: %w", err)
+	}
+
 	// send email
-	senderEmail := "yousafbhaikhan10@gmail.com"
-	mailSender := mail.NewGmailSender(user.Username, senderEmail, config.APP_PASSWORD)
+	mailSender := mail.NewGmailSender(user.Username, config.FROM_EMAIL_ADDRESS, config.APP_PASSWORD)
 	receiverEmail := []string{user.Email}
-	mailSender.SendEmail(receiverEmail, "Verify your email", "Please verify your email by clicking this link: http://localhost:8080/verify-email?token=123")
+	verifyEmailUrl := fmt.Sprintf("Please verify your email by using the following link: http://localhost:8080/verify-email?id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode)
+	mailSender.SendEmail(receiverEmail, "Verify your email", verifyEmailUrl)
 
 	log.Info().Str("type", task.Type()).Str("username", payload.Username).
 		Str("email", user.Email).Msg("processed task")
