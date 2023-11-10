@@ -19,6 +19,7 @@ type Config struct {
 	ENVIRONMENT            string        `mapstructure:"ENVIRONMENT"`
 	REDIS_ADDR             string        `mapstructure:"REDIS_ADDR"`
 	APP_PASSWORD           string        `mapstructure:"APP_PASSWORD"`
+	FROM_EMAIL_ADDRESS     string        `mapstructure:"FROM_EMAIL_ADDRESS"`
 }
 
 func LoadConfig(path string) (*Config, error) {
