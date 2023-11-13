@@ -1,7 +1,6 @@
 package mail
 
 import (
-	"bytes"
 	"net/smtp"
 	"strconv"
 )
@@ -41,15 +40,23 @@ func (m *MailService) SendEmail(to []string, subject string, body string) error 
 	// Authentication.
 	auth := smtp.PlainAuth("", from, password, smtpHost)
 
-	var bodyMessage bytes.Buffer
-	bodyMessage.Write([]byte("Subject: " + subject + "\n" + body))
+	// msg := []byte("To: recipient@example.net\r\n" +
+	// 	"Subject: discount Gophers!\r\n" +
+	// 	"\r\n" +
+	// 	body\r\n")
+
+	msg := []byte("From: " + m.name + "<" + from + ">\r\n" +
+		"To: " + to[0] + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"\r\n" +
+		body + "\r\n")
 
 	// Sending email.
 	err := smtp.SendMail(smtpHost+":"+strconv.Itoa(smtpPort), // Convert Int to String
 		auth,
 		from,
 		receiver,
-		bodyMessage.Bytes())
+		msg)
 
 	if err != nil {
 		return err
