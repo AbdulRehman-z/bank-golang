@@ -58,3 +58,19 @@ func ValidateEmail(value string) error {
 	}
 	return nil
 }
+
+func ValidateEmailId(value int64) error {
+	if value < 0 {
+		return fmt.Errorf("email id cannot be empty")
+	}
+
+	return nil
+}
+
+func VlaidateSecretCode(value string) error {
+	if err := validateString(value, 5, 50); err != nil {
+		return err
+	}
+
+	return nil
+}
