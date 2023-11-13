@@ -64,7 +64,8 @@ func (processor *RedisTaskProcessor) ProcessTaskSendEmailVerify(ctx context.Cont
 	// send email
 	mailSender := mail.NewGmailSender(user.Username, config.FROM_EMAIL_ADDRESS, config.APP_PASSWORD)
 	receiverEmail := []string{user.Email}
-	verifyEmailUrl := fmt.Sprintf("Please verify your email by using the following link: http://localhost:8080/verify-email?id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode)
+	verifyEmailUrl := fmt.Sprintf("Please verify your email by using the following link: http://localhost:7000/v1/verify_email?email_id=%d&secret_code=%s",
+		verifyEmail.ID, verifyEmail.SecretCode)
 	mailSender.SendEmail(receiverEmail, "Verify your email", verifyEmailUrl)
 
 	log.Info().Str("type", task.Type()).Str("username", payload.Username).
