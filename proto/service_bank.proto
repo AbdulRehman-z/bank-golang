@@ -4,6 +4,7 @@ package pb;
 import "rpc_create_user.proto";
 import "rpc_login_user.proto";
 import "rpc_update_user.proto";
+import "rpc_verify_email.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "github.com/AbdulRehman-z/bank-golang/pb";
@@ -48,6 +49,15 @@ service BankService {
       option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
         description: "Update User";
         summary: "Use this api endpoint to update user";
+        };
+    }
+    rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse) {
+      option (google.api.http) = {
+        get: "/v1/verify_email"
+      };
+      option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+        description: "Verify Email";
+        summary: "Use this api endpoint to verify email";
         };
     }
 }
