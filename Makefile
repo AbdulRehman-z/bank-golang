@@ -33,7 +33,9 @@ truncate:
 	docker exec -it $(CONTAINER_NAME) psql --username=postgres --dbname=$(DB_NAME) --command "TRUNCATE TABLE entries, users, exchange_rates, verify_emails, transfers, sessions, accounts CASCADE;"
 
 mock:
-	mockgen -destination db/mock/store.go -package mockdb github.com/AbdulRehman-z/bank-golang/db/sqlc Store	
+	mockgen -destination db/mock/store.go -package mockdb github.com/AbdulRehman-z/bank-golang/db/sqlc Store
+	mockgen -destination worker/mock/distributor.go -package mockworker github.com/AbdulRehman-z/bank-golang/worker TaskDistributor	
+
 
 proto:
 	rm -f pb/*.go
