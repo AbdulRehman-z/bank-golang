@@ -92,7 +92,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 
 	response := &pb.CreateUserResponse{
 		User: &pb.User{
-			Username:          txUserResult.User.FullName,
+			Username:          txUserResult.User.Username,
 			FullName:          txUserResult.User.FullName,
 			Email:             txUserResult.User.Email,
 			PasswordChangedAt: timestamppb.New(txUserResult.User.PasswordChangedAt),
