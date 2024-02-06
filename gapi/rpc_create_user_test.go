@@ -13,6 +13,7 @@ import (
 	db "github.com/AbdulRehman-z/bank-golang/db/sqlc"
 	"github.com/AbdulRehman-z/bank-golang/pb"
 	"github.com/AbdulRehman-z/bank-golang/util"
+	"github.com/AbdulRehman-z/bank-golang/worker"
 	mockworker "github.com/AbdulRehman-z/bank-golang/worker/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -21,6 +22,7 @@ import (
 type EqCreateUserTxParamsMatcher struct {
 	arg      db.CreateUserTxParams
 	password string
+	user     db.User
 }
 
 func (expected EqCreateUserTxParamsMatcher) Matches(x any) bool {
@@ -35,27 +37,35 @@ func (expected EqCreateUserTxParamsMatcher) Matches(x any) bool {
 	}
 
 	expected.arg.HashedPassword = actualArg.HashedPassword
-	return reflect.DeepEqual(expected.arg, actualArg)
+	if !reflect.DeepEqual(expected.arg.CreateUserParams, actualArg.CreateUserParams) {
+		return false
+	}
+
+	err = actualArg.AfterCreate(expected.user)
+
+	return err == nil
 }
 
 func (e EqCreateUserTxParamsMatcher) String() string {
 	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.password)
 }
 
-func EqCreateUserTxParams(arg db.CreateUserTxParams, password string) gomock.Matcher {
+func EqCreateUserTxParams(arg db.CreateUserTxParams, password string, user db.User) gomock.Matcher {
 	return EqCreateUserTxParamsMatcher{
 		arg:      arg,
 		password: password,
+		user:     user,
 	}
 }
 
 func TestCreateUserAPI(t *testing.T) {
 	user, password := randomUser(t)
+	// fmt.Println(user.Username)
 
 	testCases := []struct {
 		name          string
 		req           *pb.CreateUserRequest
-		buildStubs    func(store *mockdb.MockStore)
+		buildStubs    func(store *mockdb.MockStore, taskDistributor *mockworker.MockTaskDistributor)
 		checkResponse func(t *testing.T, response *pb.CreateUserResponse, err error)
 	}{
 		{
@@ -66,7 +76,7 @@ func TestCreateUserAPI(t *testing.T) {
 				Fullname: user.FullName,
 				Email:    user.Email,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockworker.MockTaskDistributor) {
 				arg := db.CreateUserTxParams{
 					CreateUserParams: db.CreateUserParams{
 						FullName:       user.FullName,
@@ -76,13 +86,25 @@ func TestCreateUserAPI(t *testing.T) {
 					},
 				}
 				store.EXPECT().
-					CreateUser(gomock.Any(), EqCreateUserTxParams(arg, password)).
+					CreateUserTx(gomock.Any(), EqCreateUserTxParams(arg, password, user)).
 					Times(1).
 					Return(db.CreateuserTxResult{User: user}, nil)
+
+				payload := &worker.PayloadSendVerificationEmail{
+					Username: user.Username,
+				}
+				taskDistributor.EXPECT().
+					TaskSendVerificationEmail(gomock.Any(), payload, gomock.Any()).
+					Times(1).
+					Return(nil)
 			},
 			checkResponse: func(t *testing.T, resp *pb.CreateUserResponse, err error) {
 				require.NoError(t, err)
 				require.NotEmpty(t, resp)
+				// fmt.Printf("=====================================")
+				// fmt.Printf("Expected: %v", user.Username)
+				// fmt.Printf("Actual: %v", resp.User.Username)
+				// fmt.Printf("=====================================")
 				require.Equal(t, user.Username, resp.User.Username)
 				require.Equal(t, user.Email, resp.User.Email)
 				require.Equal(t, user.FullName, resp.User.FullName)
@@ -193,18 +215,21 @@ func TestCreateUserAPI(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			storeCtrl := gomock.NewController(t)
+			defer storeCtrl.Finish()
 
-			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
+			store := mockdb.NewMockStore(storeCtrl)
+			taskCtrl := gomock.NewController(t)
+			taskDistributor := mockworker.NewMockTaskDistributor(taskCtrl)
 
-			taskDistributor := mockworker.NewMockTaskDistributor(ctrl)
-
+			tc.buildStubs(store, taskDistributor)
 			server := NewTestServer(t, store, taskDistributor)
-			server.CreateUser(context.Background(), tc.req)
-
-			// tc.checkResponse(t, response, err)
+			resp, err := server.CreateUser(context.Background(), tc.req)
+			fmt.Println("=================================")
+			fmt.Printf("Request: %v", tc.req.Username)
+			fmt.Printf("Response: %v", resp.User.Username)
+			fmt.Println("=================================")
+			tc.checkResponse(t, resp, err)
 		})
 	}
 }
