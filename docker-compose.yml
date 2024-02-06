@@ -15,7 +15,7 @@ services:
       - "5000:5000"
     environment:
       DB_DRIVER: "postgres"
-      DB_URL: "postgres://postgres:password@postgres:5432/bankDb?sslmode=disable"
+      DB_URL: "postgresql://postgres:password@postgres:5432/bankDb?sslmode=disable"
     depends_on:
       - postgres
     entrypoint: ["./app/wait-for.sh", "postgres:5432", "--", "/app/start.sh"]
